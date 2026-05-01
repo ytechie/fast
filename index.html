@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#0b0d10" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="OMAD" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>OMAD Fast</title>
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <h1 id="app-logo" tabindex="0" role="button" aria-label="Go to Timer view">OMAD<span class="logo-flame">🔥</span></h1>
+        <nav class="tabs" role="tablist">
+          <button class="tab active" data-view="timer" role="tab" aria-selected="true">Timer</button>
+          <button class="tab" data-view="history" role="tab" aria-selected="false">History</button>
+        </nav>
+      </header>
+
+      <main class="app-main">
+        <!-- TIMER VIEW -->
+        <section id="view-timer" class="view active" role="tabpanel">
+          <!-- IDLE STATE -->
+          <div id="idle-card" class="card idle-card hidden">
+            <div class="idle-emoji">🍽️</div>
+            <h2>Ready when you are</h2>
+            <p class="idle-sub">Start your fast as soon as you finish your meal.</p>
+            <button id="btn-start" class="btn btn-primary btn-large">Start Fast</button>
+            <div class="last-fast-summary" id="last-fast-summary"></div>
+          </div>
+
+          <!-- FASTING STATE -->
+          <div id="fasting-card" class="hidden">
+            <div class="card timer-card">
+              <div class="timer-label">Fasting for</div>
+              <div class="timer-display" id="timer-display">00:00:00</div>
+              <div class="timer-meta">
+                Started <span id="started-at">—</span>
+                <button id="btn-edit-start" class="btn-link" aria-label="Edit start time">edit</button>
+              </div>
+              <button id="btn-end" class="btn btn-secondary">End Fast</button>
+              <button id="btn-boost" class="btn btn-boost-trigger">💪 Need a boost?</button>
+            </div>
+
+            <div class="card stages-list-card">
+              <div class="card-title-row">
+                <h3 class="card-title">Fasting stages &amp; benefits</h3>
+                <span class="card-title-hint">Tap a section to expand</span>
+              </div>
+              <div class="stages-list" id="stages-list"></div>
+            </div>
+          </div>
+
+          <!-- EDIT START TIME -->
+          <div id="edit-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+            <div class="modal-backdrop" data-close></div>
+            <div class="modal-panel">
+              <h3 id="edit-title">Edit start time</h3>
+              <p class="modal-sub">When did you actually start fasting?</p>
+              <input type="datetime-local" id="edit-start-input" />
+              <div class="modal-actions">
+                <button class="btn btn-ghost" data-close>Cancel</button>
+                <button id="btn-save-start" class="btn btn-primary">Save</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- BOOST / MOTIVATION -->
+          <div id="boost-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="boost-text">
+            <div class="modal-backdrop" data-close-boost></div>
+            <div class="modal-panel boost-panel">
+              <div id="boost-emoji" class="boost-emoji" aria-hidden="true">💪</div>
+              <p id="boost-text" class="boost-text">You got this.</p>
+              <div class="modal-actions">
+                <button id="btn-boost-another" class="btn btn-ghost">Another</button>
+                <button class="btn btn-primary" data-close-boost>Got this!</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- HISTORY VIEW -->
+        <section id="view-history" class="view" role="tabpanel" hidden>
+          <div class="history-stats card" id="history-stats"></div>
+          <div id="history-list" class="history-list"></div>
+          <div id="history-empty" class="empty-state hidden">
+            <div class="empty-emoji">📭</div>
+            <p>No completed fasts yet. Start one!</p>
+          </div>
+
+          <div class="card backup-card">
+            <h3 class="card-title">Backup &amp; restore</h3>
+            <p class="backup-desc">
+              Your data is stored only in this browser. Download a backup file
+              now and again so you can restore it if you lose your data or
+              switch devices.
+            </p>
+            <div class="backup-actions">
+              <button id="btn-export" class="btn btn-secondary">⬇ Download backup</button>
+              <button id="btn-import" class="btn btn-secondary">⬆ Restore backup</button>
+              <input
+                type="file"
+                id="import-file"
+                accept="application/json,.json"
+                hidden
+              />
+            </div>
+          </div>
+
+          <!-- EDIT HISTORY ITEM -->
+          <div id="edit-history-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="edit-history-title">
+            <div class="modal-backdrop" data-close-edit-history></div>
+            <div class="modal-panel">
+              <h3 id="edit-history-title">Edit fast</h3>
+              <p class="modal-sub">Adjust when this fast started and ended.</p>
+              <label class="modal-field">
+                <span class="modal-label">Started</span>
+                <input type="datetime-local" id="edit-history-start" />
+              </label>
+              <label class="modal-field">
+                <span class="modal-label">Ended</span>
+                <input type="datetime-local" id="edit-history-end" />
+              </label>
+              <p id="edit-history-duration" class="modal-duration">Duration: —</p>
+              <div class="modal-actions">
+                <button class="btn btn-ghost" data-close-edit-history>Cancel</button>
+                <button id="btn-save-history" class="btn btn-primary">Save</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+      <div id="update-banner" class="update-banner hidden" role="status" aria-live="polite">
+        <span class="update-banner-text">🔄 New version available</span>
+        <button id="btn-update-refresh" class="update-btn">Refresh</button>
+        <button id="btn-update-dismiss" class="update-dismiss" aria-label="Dismiss">×</button>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
