@@ -951,6 +951,14 @@
     refs.btnEnd.addEventListener("click", endFast);
     refs.btnEditStart.addEventListener("click", openEditModal);
     refs.btnSaveStart.addEventListener("click", saveEditedStart);
+    if (refs.editStartInput) {
+      refs.editStartInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          saveEditedStart();
+        }
+      });
+    }
     refs.editModal.querySelectorAll("[data-close]").forEach((el) => {
       el.addEventListener("click", closeEditModal);
     });
@@ -972,6 +980,15 @@
 
     if (refs.btnSaveHistory)
       refs.btnSaveHistory.addEventListener("click", saveEditedHistory);
+    [refs.editHistoryStart, refs.editHistoryEnd].forEach((el) => {
+      if (!el) return;
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          saveEditedHistory();
+        }
+      });
+    });
     if (refs.editHistoryStart)
       refs.editHistoryStart.addEventListener("input", updateEditHistoryDuration);
     if (refs.editHistoryEnd)
