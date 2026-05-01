@@ -254,11 +254,9 @@
     btnTips: $("btn-tips"),
     deckModal: $("deck-modal"),
     deckTitle: $("deck-title"),
-    deckCounter: $("deck-counter"),
     deckEmoji: $("deck-emoji"),
     deckText: $("deck-text"),
-    btnDeckPrev: $("btn-deck-prev"),
-    btnDeckNext: $("btn-deck-next"),
+    btnDeckAnother: $("btn-deck-another"),
     editHistoryModal: $("edit-history-modal"),
     editHistoryStart: $("edit-history-start"),
     editHistoryEnd: $("edit-history-end"),
@@ -875,45 +873,41 @@
     reader.readAsText(file);
   }
 
-  // ---------- Deck (Boost / Tips carousel) ----------
+  // ---------- Deck (Boost / Tips popup) ----------
   const deckState = {
     items: [],
-    index: 0,
+    lastIndex: -1,
     title: "",
   };
 
-  function shuffle(arr) {
-    const a = arr.slice();
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
+  function pickRandomItem() {
+    if (!deckState.items.length) return null;
+    if (deckState.items.length === 1) return deckState.items[0];
+    let i;
+    do {
+      i = Math.floor(Math.random() * deckState.items.length);
+    } while (i === deckState.lastIndex);
+    deckState.lastIndex = i;
+    return deckState.items[i];
   }
 
-  function renderDeck() {
-    if (!deckState.items.length) return;
-    const item = deckState.items[deckState.index];
+  function renderDeckItem(item) {
+    if (!item) return;
     if (refs.deckEmoji) refs.deckEmoji.textContent = item.emoji;
     if (refs.deckText) refs.deckText.textContent = item.text;
     if (refs.deckTitle) refs.deckTitle.textContent = deckState.title;
-    if (refs.deckCounter) {
-      refs.deckCounter.textContent =
-        deckState.index + 1 + " / " + deckState.items.length;
-    }
   }
 
   function openDeck(mode) {
     if (mode === "tips") {
       deckState.items = TIPS;
-      deckState.title = "💡 Tips";
+      deckState.title = "💡 Tip";
     } else {
-      // boost: shuffle so each open feels fresh
-      deckState.items = shuffle(BOOST_MESSAGES);
+      deckState.items = BOOST_MESSAGES;
       deckState.title = "💪 Boost";
     }
-    deckState.index = 0;
-    renderDeck();
+    deckState.lastIndex = -1;
+    renderDeckItem(pickRandomItem());
     if (refs.deckModal) refs.deckModal.classList.remove("hidden");
   }
 
@@ -921,17 +915,8 @@
     if (refs.deckModal) refs.deckModal.classList.add("hidden");
   }
 
-  function deckPrev() {
-    if (!deckState.items.length) return;
-    const n = deckState.items.length;
-    deckState.index = (deckState.index - 1 + n) % n;
-    renderDeck();
-  }
-
-  function deckNext() {
-    if (!deckState.items.length) return;
-    deckState.index = (deckState.index + 1) % deckState.items.length;
-    renderDeck();
+  function showAnother() {
+    renderDeckItem(pickRandomItem());
   }
 
   // datetime-local needs YYYY-MM-DDTHH:MM in local time
@@ -977,8 +962,8 @@
 
     if (refs.btnBoost) refs.btnBoost.addEventListener("click", () => openDeck("boost"));
     if (refs.btnTips) refs.btnTips.addEventListener("click", () => openDeck("tips"));
-    if (refs.btnDeckPrev) refs.btnDeckPrev.addEventListener("click", deckPrev);
-    if (refs.btnDeckNext) refs.btnDeckNext.addEventListener("click", deckNext);
+    if (refs.btnDeckAnother)
+      refs.btnDeckAnother.addEventListener("click", showAnother);
     if (refs.deckModal) {
       refs.deckModal.querySelectorAll("[data-close-deck]").forEach((el) => {
         el.addEventListener("click", closeDeck);
@@ -1014,27 +999,13 @@
       });
     }
 
-    // ESC closes modals; arrows navigate the deck
+    // ESC closes modals
     document.addEventListener("keydown", (e) => {
-      const deckOpen =
-        refs.deckModal && !refs.deckModal.classList.contains("hidden");
-      if (deckOpen) {
-        if (e.key === "ArrowLeft") {
-          e.preventDefault();
-          deckPrev();
-          return;
-        }
-        if (e.key === "ArrowRight") {
-          e.preventDefault();
-          deckNext();
-          return;
-        }
-      }
       if (e.key !== "Escape") return;
       if (refs.editModal && !refs.editModal.classList.contains("hidden")) {
         closeEditModal();
       }
-      if (deckOpen) {
+      if (refs.deckModal && !refs.deckModal.classList.contains("hidden")) {
         closeDeck();
       }
       if (
