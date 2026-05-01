@@ -98,6 +98,31 @@
     { emoji: "🧂", text: "Feeling off? A pinch of salt in water can fix a lot. Electrolytes matter." },
   ];
 
+  const TIPS = [
+    { emoji: "🧂", text: "Salt your meal liberally. Fasting depletes sodium fast — it's the #1 cause of headaches and fatigue." },
+    { emoji: "🥑", text: "Eat enough fat at your meal — avocado, olive oil, nuts. Fat keeps you satiated through the long stretch." },
+    { emoji: "🥩", text: "Hit your protein target first. Aim for ~0.7–1g per pound of goal body weight to protect muscle." },
+    { emoji: "🍽️", text: "Don't undereat at your meal. OMAD works because of when you eat, not how little. Eat to true satiety." },
+    { emoji: "🏋️", text: "Lift weights 2–4× a week. OMAD plus resistance training is how you stay lean, not skinny-fat." },
+    { emoji: "😴", text: "Sleep is the silent multiplier. Under 7 hours spikes ghrelin and tanks willpower the next day." },
+    { emoji: "💧", text: "Drink water all day — about half your body weight in ounces. Add a pinch of salt if you feel off." },
+    { emoji: "🍵", text: "Black coffee, plain tea, sparkling water, and bone broth (for long fasts) won't break your fast." },
+    { emoji: "🚫", text: "Avoid sweeteners during the fast. Even zero-calorie ones can trigger insulin and cravings for some." },
+    { emoji: "📋", text: "Plan your meal before hour 16. Decision fatigue late in the day is how junk food sneaks in." },
+    { emoji: "🚶", text: "Walk 10–15 minutes after your meal. Lowers your glucose response and helps digestion." },
+    { emoji: "📈", text: "Track more than the scale — measurements, photos, energy, sleep, mood. Bodies don't change linearly." },
+    { emoji: "🌊", text: "Hunger comes in waves of 15–20 minutes. It's not a steady climb — ride the wave and it passes." },
+    { emoji: "🧪", text: "A tablespoon of apple cider vinegar in water can blunt hunger and steady blood sugar." },
+    { emoji: "🩹", text: "Don't fast through illness. Your body needs nutrients to repair. Pause without guilt." },
+    { emoji: "🍳", text: "Break a long fast with protein + fat first. Carbs and big meals on an empty stomach can wreck you." },
+    { emoji: "🗓️", text: "Refeed days help. Once every 1–2 weeks, eat at maintenance to keep your metabolism honest." },
+    { emoji: "🌙", text: "No caffeine after 2pm. Sleep is your fasting superpower — don't trade it for an afternoon coffee." },
+    { emoji: "🍷", text: "Alcohol hits hard on an empty stomach. Eat first, drink second — and budget the calories." },
+    { emoji: "🎉", text: "At social events, pre-decide your move: eat with them, skip and sip, or eat early. Don't wing it." },
+    { emoji: "⏱️", text: "Slow down at your meal. Give your body 20 minutes to register fullness before going back for more." },
+    { emoji: "🧠", text: "After 2–3 weeks, hunger genuinely fades. You're not broken if it's hard at first — you're adapting." },
+  ];
+
   // ---------- Storage ----------
   function loadData() {
     try {
@@ -226,10 +251,14 @@
     btnImport: $("btn-import"),
     importFile: $("import-file"),
     btnBoost: $("btn-boost"),
-    btnBoostAnother: $("btn-boost-another"),
-    boostModal: $("boost-modal"),
-    boostEmoji: $("boost-emoji"),
-    boostText: $("boost-text"),
+    btnTips: $("btn-tips"),
+    deckModal: $("deck-modal"),
+    deckTitle: $("deck-title"),
+    deckCounter: $("deck-counter"),
+    deckEmoji: $("deck-emoji"),
+    deckText: $("deck-text"),
+    btnDeckPrev: $("btn-deck-prev"),
+    btnDeckNext: $("btn-deck-next"),
     editHistoryModal: $("edit-history-modal"),
     editHistoryStart: $("edit-history-start"),
     editHistoryEnd: $("edit-history-end"),
@@ -810,32 +839,63 @@
     reader.readAsText(file);
   }
 
-  // ---------- Boost (motivational popup) ----------
-  let lastBoostIndex = -1;
+  // ---------- Deck (Boost / Tips carousel) ----------
+  const deckState = {
+    items: [],
+    index: 0,
+    title: "",
+  };
 
-  function pickRandomBoost() {
-    if (BOOST_MESSAGES.length <= 1) return BOOST_MESSAGES[0];
-    let i;
-    do {
-      i = Math.floor(Math.random() * BOOST_MESSAGES.length);
-    } while (i === lastBoostIndex);
-    lastBoostIndex = i;
-    return BOOST_MESSAGES[i];
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
   }
 
-  function renderBoost() {
-    const msg = pickRandomBoost();
-    if (refs.boostEmoji) refs.boostEmoji.textContent = msg.emoji;
-    if (refs.boostText) refs.boostText.textContent = msg.text;
+  function renderDeck() {
+    if (!deckState.items.length) return;
+    const item = deckState.items[deckState.index];
+    if (refs.deckEmoji) refs.deckEmoji.textContent = item.emoji;
+    if (refs.deckText) refs.deckText.textContent = item.text;
+    if (refs.deckTitle) refs.deckTitle.textContent = deckState.title;
+    if (refs.deckCounter) {
+      refs.deckCounter.textContent =
+        deckState.index + 1 + " / " + deckState.items.length;
+    }
   }
 
-  function openBoost() {
-    renderBoost();
-    if (refs.boostModal) refs.boostModal.classList.remove("hidden");
+  function openDeck(mode) {
+    if (mode === "tips") {
+      deckState.items = TIPS;
+      deckState.title = "💡 Tips";
+    } else {
+      // boost: shuffle so each open feels fresh
+      deckState.items = shuffle(BOOST_MESSAGES);
+      deckState.title = "💪 Boost";
+    }
+    deckState.index = 0;
+    renderDeck();
+    if (refs.deckModal) refs.deckModal.classList.remove("hidden");
   }
 
-  function closeBoost() {
-    if (refs.boostModal) refs.boostModal.classList.add("hidden");
+  function closeDeck() {
+    if (refs.deckModal) refs.deckModal.classList.add("hidden");
+  }
+
+  function deckPrev() {
+    if (!deckState.items.length) return;
+    const n = deckState.items.length;
+    deckState.index = (deckState.index - 1 + n) % n;
+    renderDeck();
+  }
+
+  function deckNext() {
+    if (!deckState.items.length) return;
+    deckState.index = (deckState.index + 1) % deckState.items.length;
+    renderDeck();
   }
 
   // datetime-local needs YYYY-MM-DDTHH:MM in local time
@@ -879,12 +939,13 @@
     if (refs.importFile)
       refs.importFile.addEventListener("change", handleImportFile);
 
-    if (refs.btnBoost) refs.btnBoost.addEventListener("click", openBoost);
-    if (refs.btnBoostAnother)
-      refs.btnBoostAnother.addEventListener("click", renderBoost);
-    if (refs.boostModal) {
-      refs.boostModal.querySelectorAll("[data-close-boost]").forEach((el) => {
-        el.addEventListener("click", closeBoost);
+    if (refs.btnBoost) refs.btnBoost.addEventListener("click", () => openDeck("boost"));
+    if (refs.btnTips) refs.btnTips.addEventListener("click", () => openDeck("tips"));
+    if (refs.btnDeckPrev) refs.btnDeckPrev.addEventListener("click", deckPrev);
+    if (refs.btnDeckNext) refs.btnDeckNext.addEventListener("click", deckNext);
+    if (refs.deckModal) {
+      refs.deckModal.querySelectorAll("[data-close-deck]").forEach((el) => {
+        el.addEventListener("click", closeDeck);
       });
     }
 
@@ -917,14 +978,28 @@
       });
     }
 
-    // ESC closes modals
+    // ESC closes modals; arrows navigate the deck
     document.addEventListener("keydown", (e) => {
+      const deckOpen =
+        refs.deckModal && !refs.deckModal.classList.contains("hidden");
+      if (deckOpen) {
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          deckPrev();
+          return;
+        }
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          deckNext();
+          return;
+        }
+      }
       if (e.key !== "Escape") return;
       if (refs.editModal && !refs.editModal.classList.contains("hidden")) {
         closeEditModal();
       }
-      if (refs.boostModal && !refs.boostModal.classList.contains("hidden")) {
-        closeBoost();
+      if (deckOpen) {
+        closeDeck();
       }
       if (
         refs.editHistoryModal &&

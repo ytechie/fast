@@ -46,7 +46,10 @@
                 <button id="btn-edit-start" class="btn-link" aria-label="Edit start time">edit</button>
               </div>
               <button id="btn-end" class="btn btn-secondary">End Fast</button>
-              <button id="btn-boost" class="btn btn-boost-trigger">💪 Need a boost?</button>
+              <div class="btn-row">
+                <button id="btn-boost" class="btn btn-boost-trigger">💪 Boost me</button>
+                <button id="btn-tips" class="btn btn-boost-trigger">💡 Tips</button>
+              </div>
             </div>
 
             <div class="card stages-list-card">
@@ -72,15 +75,20 @@
             </div>
           </div>
 
-          <!-- BOOST / MOTIVATION -->
-          <div id="boost-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="boost-text">
-            <div class="modal-backdrop" data-close-boost></div>
-            <div class="modal-panel boost-panel">
-              <div id="boost-emoji" class="boost-emoji" aria-hidden="true">💪</div>
-              <p id="boost-text" class="boost-text">You got this.</p>
-              <div class="modal-actions">
-                <button id="btn-boost-another" class="btn btn-ghost">Another</button>
-                <button class="btn btn-primary" data-close-boost>Got this!</button>
+          <!-- DECK (Boost / Tips) -->
+          <div id="deck-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="deck-text">
+            <div class="modal-backdrop" data-close-deck></div>
+            <div class="modal-panel deck-panel">
+              <div class="deck-header">
+                <span id="deck-title" class="deck-title">Boost</span>
+                <span id="deck-counter" class="deck-counter">1 / 1</span>
+              </div>
+              <div id="deck-emoji" class="boost-emoji" aria-hidden="true">💪</div>
+              <p id="deck-text" class="boost-text">You got this.</p>
+              <div class="deck-nav">
+                <button id="btn-deck-prev" class="btn-deck-arrow" aria-label="Previous">‹</button>
+                <button class="btn btn-primary deck-done" data-close-deck>Got it</button>
+                <button id="btn-deck-next" class="btn-deck-arrow" aria-label="Next">›</button>
               </div>
             </div>
           </div>
