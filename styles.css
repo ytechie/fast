@@ -536,6 +536,11 @@ details.stage-row:not(.completed):not(.current) .stage-row-name {
   font-variant-numeric: tabular-nums;
 }
 
+.stage-countdown {
+  color: var(--text-dim);
+  margin-left: 2px;
+}
+
 .now-pill {
   font-size: 10px;
   font-weight: 700;

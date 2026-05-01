@@ -306,6 +306,7 @@
       }
     }
     updateCurrentStageProgress(elapsed, stage);
+    updateUpcomingCountdowns(elapsed);
   }
 
   function updateCurrentStageProgress(elapsedMs, stage) {
@@ -337,6 +338,24 @@
     timeNext.textContent = formatShortDuration(remaining) + " to next stage";
   }
 
+  function formatStartsIn(remainingMs) {
+    if (remainingMs <= 0) return "starting…";
+    if (remainingMs < 60000) return "soon";
+    if (remainingMs < 3600000) {
+      return "in " + Math.floor(remainingMs / 60000) + "m";
+    }
+    return "in " + Math.round(remainingMs / 3600000) + "h";
+  }
+
+  function updateUpcomingCountdowns(elapsedMs) {
+    refs.stagesList.querySelectorAll(".stage-countdown").forEach((el) => {
+      const startH = parseFloat(el.dataset.startHours);
+      if (isNaN(startH)) return;
+      const remaining = startH * 3600000 - elapsedMs;
+      el.textContent = "· " + formatStartsIn(remaining);
+    });
+  }
+
   function renderStagesList(currentIndex) {
     // Preserve which non-current rows the user manually toggled open.
     const openState = new Map();
@@ -346,9 +365,14 @@
 
     refs.stagesList.innerHTML = "";
 
+    const elapsedNow = state.currentFast
+      ? Date.now() - new Date(state.currentFast.startTime).getTime()
+      : 0;
+
     STAGES.forEach((s, i) => {
       const isCompleted = i < currentIndex;
       const isCurrent = i === currentIndex;
+      const isUpcoming = i > currentIndex;
       const rangeLabel =
         s.endHours === Infinity
           ? s.startHours + "h+"
@@ -362,6 +386,17 @@
       // Auto-open the current stage. Preserve user's manual open state for others.
       if (isCurrent || openState.get(i) === true) details.open = true;
 
+      let metaHtml = escapeHtml(rangeLabel);
+      if (isUpcoming) {
+        const remaining = s.startHours * 3600000 - elapsedNow;
+        metaHtml +=
+          ' <span class="stage-countdown" data-start-hours="' +
+          s.startHours +
+          '">· ' +
+          escapeHtml(formatStartsIn(remaining)) +
+          "</span>";
+      }
+
       const summary = document.createElement("summary");
       summary.className = "stage-summary";
       summary.innerHTML =
@@ -374,7 +409,7 @@
         (isCurrent ? ' <span class="now-pill">NOW</span>' : "") +
         "</span>" +
         '<span class="stage-row-meta">' +
-        rangeLabel +
+        metaHtml +
         "</span>" +
         "</span>" +
         '<span class="stage-row-chevron" aria-hidden="true">›</span>';
@@ -432,6 +467,7 @@
     renderStagesList(stage.index);
     lastStageIndex = stage.index;
     updateCurrentStageProgress(elapsed, stage);
+    updateUpcomingCountdowns(elapsed);
     startTicking();
   }
 
