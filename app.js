@@ -120,7 +120,7 @@
     { emoji: "🍷", text: "Alcohol hits hard on an empty stomach. Eat first, drink second — and budget the calories." },
     { emoji: "🎉", text: "At social events, pre-decide your move: eat with them, skip and sip, or eat early. Don't wing it." },
     { emoji: "⏱️", text: "Slow down at your meal. Give your body 20 minutes to register fullness before going back for more." },
-    { emoji: "🧠", text: "After 2–3 weeks, hunger genuinely fades. You're not broken if it's hard at first — you're adapting." },
+    { emoji: "🧠", text: "After 2–3 weeks, hunger between meals genuinely fades. You're not broken if it's hard at first — you're adapting." },
   ];
 
   // ---------- Storage ----------
