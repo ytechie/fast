@@ -30,7 +30,10 @@
           <!-- IDLE STATE -->
           <div id="idle-card" class="card idle-card hidden">
             <div class="idle-emoji">🍽️</div>
-            <h2>Ready when you are</h2>
+            <div id="idle-timer-block" class="idle-timer-block hidden">
+              <div class="timer-label">Since last fast</div>
+              <div id="idle-timer-display" class="timer-display idle-timer-display">00:00:00</div>
+            </div>
             <p class="idle-sub">Start your fast as soon as you finish your meal.</p>
             <button id="btn-start" class="btn btn-primary btn-large">Start Fast</button>
             <div class="last-fast-summary" id="last-fast-summary"></div>

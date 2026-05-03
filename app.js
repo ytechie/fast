@@ -233,6 +233,8 @@
 
   const refs = {
     idleCard: $("idle-card"),
+    idleTimerBlock: $("idle-timer-block"),
+    idleTimerDisplay: $("idle-timer-display"),
     fastingCard: $("fasting-card"),
     timerDisplay: $("timer-display"),
     startedAt: $("started-at"),
@@ -290,21 +292,30 @@
   }
 
   function tick() {
-    if (!state.currentFast) return;
-    const start = new Date(state.currentFast.startTime).getTime();
-    const elapsed = Date.now() - start;
-    refs.timerDisplay.textContent = formatHMS(elapsed);
-    const stage = getStageForElapsed(elapsed);
-    if (stage.index !== lastStageIndex) {
-      renderStagesList(stage.index);
-      lastStageIndex = stage.index;
-      // gentle motivational nudge on stage advance (skip the very first render)
-      if (lastStageIndex > 0) {
-        showToast("New stage: " + stage.emoji + " " + stage.name);
+    if (state.currentFast) {
+      const start = new Date(state.currentFast.startTime).getTime();
+      const elapsed = Date.now() - start;
+      refs.timerDisplay.textContent = formatHMS(elapsed);
+      const stage = getStageForElapsed(elapsed);
+      if (stage.index !== lastStageIndex) {
+        renderStagesList(stage.index);
+        lastStageIndex = stage.index;
+        // gentle motivational nudge on stage advance (skip the very first render)
+        if (lastStageIndex > 0) {
+          showToast("New stage: " + stage.emoji + " " + stage.name);
+        }
       }
+      updateCurrentStageProgress(elapsed, stage);
+      updateUpcomingCountdowns(elapsed);
+      return;
     }
-    updateCurrentStageProgress(elapsed, stage);
-    updateUpcomingCountdowns(elapsed);
+
+    // Idle: count up since last fast ended
+    if (state.history.length > 0 && refs.idleTimerDisplay) {
+      const last = state.history[state.history.length - 1];
+      const since = Date.now() - new Date(last.endTime).getTime();
+      refs.idleTimerDisplay.textContent = formatHMS(since);
+    }
   }
 
   function updateCurrentStageProgress(elapsedMs, stage) {
@@ -480,8 +491,15 @@
         formatDuration(last.durationMs) +
         "</strong> &middot; ended " +
         formatDateTime(last.endTime);
+      if (refs.idleTimerBlock) refs.idleTimerBlock.classList.remove("hidden");
+      if (refs.idleTimerDisplay) {
+        const since = Date.now() - new Date(last.endTime).getTime();
+        refs.idleTimerDisplay.textContent = formatHMS(since);
+      }
+      startTicking();
     } else {
       refs.lastFastSummary.innerHTML = "";
+      if (refs.idleTimerBlock) refs.idleTimerBlock.classList.add("hidden");
     }
   }
 
@@ -1035,8 +1053,11 @@
 
     // Re-render on visibility (catches drift if tab was backgrounded)
     document.addEventListener("visibilitychange", () => {
-      if (!document.hidden && state.currentFast) {
+      if (document.hidden) return;
+      if (state.currentFast) {
         renderFasting();
+      } else {
+        renderIdle();
       }
     });
 
