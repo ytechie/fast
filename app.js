@@ -127,14 +127,15 @@
   function loadData() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { currentFast: null, history: [], version: DATA_VERSION };
+      if (!raw) return { currentFast: null, history: [], lastBackupAt: null, version: DATA_VERSION };
       const data = JSON.parse(raw);
       if (!data.history) data.history = [];
       if (!("currentFast" in data)) data.currentFast = null;
+      if (!("lastBackupAt" in data)) data.lastBackupAt = null;
       return data;
     } catch (e) {
       console.warn("Failed to load data; starting fresh.", e);
-      return { currentFast: null, history: [], version: DATA_VERSION };
+      return { currentFast: null, history: [], lastBackupAt: null, version: DATA_VERSION };
     }
   }
 
@@ -251,6 +252,7 @@
     historyStats: $("history-stats"),
     btnExport: $("btn-export"),
     btnImport: $("btn-import"),
+    backupStatus: $("backup-status"),
     importFile: $("import-file"),
     btnBoost: $("btn-boost"),
     btnTips: $("btn-tips"),
@@ -512,6 +514,7 @@
   }
 
   function renderHistoryView() {
+    renderBackupStatus();
     const list = refs.historyList;
     list.innerHTML = "";
     if (state.history.length === 0) {
@@ -763,6 +766,31 @@
   }
 
   // ---------- Export / Import ----------
+  function formatBackupStatus(iso) {
+    if (!iso) return { text: "No backups yet — download one!", warn: true };
+    const t = new Date(iso).getTime();
+    if (isNaN(t)) return { text: "No backups yet — download one!", warn: true };
+    const ms = Date.now() - t;
+    const days = Math.floor(ms / 86400000);
+    let text;
+    if (days <= 0) text = "Last backup: today";
+    else if (days === 1) text = "Last backup: yesterday";
+    else if (days < 30) text = "Last backup: " + days + " days ago";
+    else if (days < 60) text = "Last backup: about a month ago";
+    else {
+      const months = Math.round(days / 30);
+      text = "Last backup: " + months + " months ago";
+    }
+    return { text, warn: days >= 14 };
+  }
+
+  function renderBackupStatus() {
+    if (!refs.backupStatus) return;
+    const status = formatBackupStatus(state.lastBackupAt);
+    refs.backupStatus.textContent = status.text;
+    refs.backupStatus.classList.toggle("backup-warn", status.warn);
+  }
+
   function exportData() {
     try {
       const payload = {
@@ -783,6 +811,9 @@
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      state.lastBackupAt = payload.exportedAt;
+      saveData(state);
+      renderBackupStatus();
       showToast("Backup downloaded");
     } catch (err) {
       console.error("Export failed:", err);
@@ -841,6 +872,7 @@
         endTime: h.endTime,
         durationMs: h.durationMs,
       })),
+      lastBackupAt: isValidIso(data.exportedAt) ? data.exportedAt : null,
     };
   }
 

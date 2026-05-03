@@ -806,6 +806,17 @@ details.stage-row.current .stage-content {
   line-height: 1.5;
 }
 
+.backup-status {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.backup-status.backup-warn {
+  color: var(--warning);
+}
+
 .backup-actions {
   display: flex;
   gap: 10px;
