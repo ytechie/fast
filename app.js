@@ -235,17 +235,6 @@
     });
   }
 
-  function getStageForElapsed(ms) {
-    const hours = ms / 3600000;
-    for (let i = 0; i < STAGES.length; i++) {
-      const s = STAGES[i];
-      if (hours >= s.startHours && hours < s.endHours) {
-        return { ...s, index: i };
-      }
-    }
-    return { ...STAGES[STAGES.length - 1], index: STAGES.length - 1 };
-  }
-
   // Sum of all tag offsets for a given fast (meal + activities). Used to shift
   // the stage timeline. See MEAL_TAGS / ACTIVITY_TAGS for semantics.
   function getFastOffsetHours(fast) {
@@ -262,12 +251,58 @@
     return total;
   }
 
-  // Convert raw elapsed-since-start ms into "effective" ms by subtracting the
-  // offset. Positive offset (e.g. dessert) makes you effectively earlier in
-  // the timeline. Clamped at 0 so we never go below the Fed stage.
-  function getEffectiveElapsed(rawMs, offsetHours) {
-    const eff = rawMs - offsetHours * 3600000;
-    return eff < 0 ? 0 : eff;
+  // Find which stage the user is in given raw elapsed ms and their tag offset.
+  // Returns the stage with its shifted wall-clock boundaries attached.
+  function getStageForFast(rawElapsedMs, offsetHours) {
+    const shifted = computeShiftedStages(offsetHours);
+    const hours = (rawElapsedMs < 0 ? 0 : rawElapsedMs) / 3600000;
+    for (let i = 0; i < STAGES.length; i++) {
+      const sh = shifted[i];
+      if (hours >= sh.startH && hours < sh.endH) {
+        return {
+          ...STAGES[i],
+          index: i,
+          shiftedStartH: sh.startH,
+          shiftedEndH: sh.endH,
+        };
+      }
+    }
+    const last = STAGES.length - 1;
+    return {
+      ...STAGES[last],
+      index: last,
+      shiftedStartH: shifted[last].startH,
+      shiftedEndH: shifted[last].endH,
+    };
+  }
+
+  // Compute the displayed (wall-clock) hour ranges for each stage given the
+  // active fast's offset. Stages are monotonic from 0 — when an offset is
+  // applied, upper boundaries shift but each stage still starts exactly where
+  // the previous one ended. Positive offsets stretch the early stages (a heavy
+  // meal keeps you in Fed longer); negative offsets compress them.
+  function computeShiftedStages(offsetHours) {
+    const out = [];
+    let prevEnd = 0;
+    STAGES.forEach((s) => {
+      const startH = prevEnd;
+      let endH;
+      if (s.endHours === Infinity) {
+        endH = Infinity;
+      } else {
+        endH = Math.max(startH, s.endHours + offsetHours);
+      }
+      out.push({ startH, endH });
+      if (endH !== Infinity) prevEnd = endH;
+    });
+    return out;
+  }
+
+  // Format an hour count for stage range labels. Integers stay clean; shifted
+  // values render with one decimal (e.g. 15.5).
+  function formatStageHour(h) {
+    if (h <= 0) return "0";
+    return h % 1 === 0 ? String(h) : h.toFixed(1);
   }
 
 
@@ -358,8 +393,7 @@
       const elapsed = Date.now() - start;
       refs.timerDisplay.textContent = formatHMS(elapsed);
       const offset = getFastOffsetHours(state.currentFast);
-      const effective = getEffectiveElapsed(elapsed, offset);
-      const stage = getStageForElapsed(effective);
+      const stage = getStageForFast(elapsed, offset);
       if (stage.index !== lastStageIndex) {
         renderStagesList(stage.index);
         lastStageIndex = stage.index;
@@ -368,8 +402,8 @@
           showToast("New stage: " + stage.emoji + " " + stage.name);
         }
       }
-      updateCurrentStageProgress(effective, stage);
-      updateUpcomingCountdowns(effective);
+      updateCurrentStageProgress(elapsed, stage);
+      updateUpcomingCountdowns(elapsed);
       return;
     }
 
@@ -381,15 +415,17 @@
     }
   }
 
-  function updateCurrentStageProgress(elapsedMs, stage) {
+  function updateCurrentStageProgress(rawElapsedMs, stage) {
     const currentRow = refs.stagesList.querySelector(".stage-row.current");
     if (!currentRow) return;
 
-    if (stage.endHours === Infinity) {
+    if (stage.shiftedEndH === Infinity) {
       const past = currentRow.querySelector(".stage-time-past");
       if (past) {
+        const beyond = rawElapsedMs - stage.shiftedStartH * 3600000;
         past.textContent =
-          formatShortDuration(elapsedMs - stage.startHours * 3600000) + " past 24h";
+          formatShortDuration(beyond < 0 ? 0 : beyond) +
+          " past " + formatStageHour(stage.shiftedStartH) + "h";
       }
       return;
     }
@@ -399,15 +435,18 @@
     const timeNext = currentRow.querySelector(".stage-time-next");
     if (!fill || !timeIn || !timeNext) return;
 
-    const stageStartMs = stage.startHours * 3600000;
-    const stageEndMs = stage.endHours * 3600000;
-    const intoStage = elapsedMs - stageStartMs;
+    const stageStartMs = stage.shiftedStartH * 3600000;
+    const stageEndMs = stage.shiftedEndH * 3600000;
+    const intoStage = rawElapsedMs - stageStartMs;
     const stageLength = stageEndMs - stageStartMs;
-    const pct = Math.min(100, Math.max(0, (intoStage / stageLength) * 100));
+    const pct = stageLength > 0
+      ? Math.min(100, Math.max(0, (intoStage / stageLength) * 100))
+      : 100;
     fill.style.width = pct.toFixed(1) + "%";
-    timeIn.textContent = formatShortDuration(intoStage) + " in";
-    const remaining = stageEndMs - elapsedMs;
-    timeNext.textContent = formatShortDuration(remaining) + " to next stage";
+    timeIn.textContent = formatShortDuration(intoStage < 0 ? 0 : intoStage) + " in";
+    const remaining = stageEndMs - rawElapsedMs;
+    timeNext.textContent =
+      formatShortDuration(remaining < 0 ? 0 : remaining) + " to next stage";
   }
 
   function formatStartsIn(remainingMs) {
@@ -419,13 +458,35 @@
     return "in " + Math.round(remainingMs / 3600000) + "h";
   }
 
-  function updateUpcomingCountdowns(elapsedMs) {
+  function updateUpcomingCountdowns(rawElapsedMs) {
     refs.stagesList.querySelectorAll(".stage-countdown").forEach((el) => {
       const startH = parseFloat(el.dataset.startHours);
       if (isNaN(startH)) return;
-      const remaining = startH * 3600000 - elapsedMs;
+      const remaining = startH * 3600000 - rawElapsedMs;
       el.textContent = "· " + formatStartsIn(remaining);
     });
+  }
+
+  // Compute the displayed (wall-clock) hour ranges for each stage given the
+  // active fast's offset. Stages are monotonic from 0 — when an offset is
+  // applied, upper boundaries shift but each stage still starts exactly where
+  // the previous one ended. Positive offsets stretch the early stages (a heavy
+  // meal keeps you in Fed longer); negative offsets compress them.
+  function computeShiftedStages(offsetHours) {
+    const out = [];
+    let prevEnd = 0;
+    STAGES.forEach((s) => {
+      const startH = prevEnd;
+      let endH;
+      if (s.endHours === Infinity) {
+        endH = Infinity;
+      } else {
+        endH = Math.max(startH, s.endHours + offsetHours);
+      }
+      out.push({ startH, endH });
+      if (endH !== Infinity) prevEnd = endH;
+    });
+    return out;
   }
 
   function renderStagesList(currentIndex) {
@@ -437,21 +498,23 @@
 
     refs.stagesList.innerHTML = "";
 
-    const elapsedNow = state.currentFast
-      ? getEffectiveElapsed(
-          Date.now() - new Date(state.currentFast.startTime).getTime(),
-          getFastOffsetHours(state.currentFast)
-        )
+    const offsetHours = state.currentFast
+      ? getFastOffsetHours(state.currentFast)
       : 0;
+    const rawElapsedNow = state.currentFast
+      ? Date.now() - new Date(state.currentFast.startTime).getTime()
+      : 0;
+    const shifted = computeShiftedStages(offsetHours);
 
     STAGES.forEach((s, i) => {
       const isCompleted = i < currentIndex;
       const isCurrent = i === currentIndex;
       const isUpcoming = i > currentIndex;
+      const sh = shifted[i];
       const rangeLabel =
-        s.endHours === Infinity
-          ? s.startHours + "h+"
-          : s.startHours + "–" + s.endHours + "h";
+        sh.endH === Infinity
+          ? formatStageHour(sh.startH) + "h+"
+          : formatStageHour(sh.startH) + "–" + formatStageHour(sh.endH) + "h";
 
       const details = document.createElement("details");
       details.className = "stage-row";
@@ -463,10 +526,10 @@
 
       let metaHtml = escapeHtml(rangeLabel);
       if (isUpcoming) {
-        const remaining = s.startHours * 3600000 - elapsedNow;
+        const remaining = sh.startH * 3600000 - rawElapsedNow;
         metaHtml +=
           ' <span class="stage-countdown" data-start-hours="' +
-          s.startHours +
+          sh.startH +
           '">· ' +
           escapeHtml(formatStartsIn(remaining)) +
           "</span>";
@@ -537,14 +600,13 @@
     refs.timerDisplay.textContent = formatHMS(elapsed);
     refs.startedAt.textContent = formatDateTime(state.currentFast.startTime);
     const offset = getFastOffsetHours(state.currentFast);
-    const effective = getEffectiveElapsed(elapsed, offset);
-    const stage = getStageForElapsed(effective);
+    const stage = getStageForFast(elapsed, offset);
     // Force a fresh render of the list (e.g., on view-switch or visibility change)
     lastStageIndex = -1;
     renderStagesList(stage.index);
     lastStageIndex = stage.index;
-    updateCurrentStageProgress(effective, stage);
-    updateUpcomingCountdowns(effective);
+    updateCurrentStageProgress(elapsed, stage);
+    updateUpcomingCountdowns(elapsed);
     renderActiveFastTags();
     startTicking();
   }
@@ -614,8 +676,7 @@
       .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
       .forEach((f) => {
         const offsetHours = getFastOffsetHours(f);
-        const effective = getEffectiveElapsed(f.durationMs, offsetHours);
-        const stage = getStageForElapsed(effective);
+        const stage = getStageForFast(f.durationMs, offsetHours);
         let tagEmojis = "";
         const fastTags = f.tags || {};
         const meal = getMealTag(fastTags.meal);
