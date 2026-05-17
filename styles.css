@@ -993,6 +993,93 @@ details.stage-row.current .stage-content {
   display: none !important;
 }
 
+/* ===== Fast tags (meal + activity, on the fasting card) ===== */
+.fast-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.fast-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.fast-tag-impact {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+/* ===== Tag chip buttons (inside meal/activity modals) ===== */
+.tag-chip-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.tag-chip-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  width: 100%;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.tag-chip-btn:hover,
+.tag-chip-btn:active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tag-chip-emoji {
+  font-size: 26px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.tag-chip-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tag-chip-label {
+  font-weight: 600;
+}
+
+.tag-chip-impact {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* ===== History item tag emojis ===== */
+.history-item-tags {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 13px;
+  vertical-align: 1px;
+  letter-spacing: 1px;
+}
+
 /* ===== Desktop ===== */
 @media (min-width: 720px) {
   .app-header {

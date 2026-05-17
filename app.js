@@ -123,6 +123,34 @@
     { emoji: "🧠", text: "After 2–3 weeks, hunger between meals genuinely fades. You're not broken if it's hard at first — you're adapting." },
   ];
 
+  // Tags the user can apply to a fast to personalize stage timing.
+  // offsetHours is added to elapsed time when computing which stage they're in:
+  //   positive = pushes stages later (carbs slow ketosis)
+  //   negative = pulls stages earlier (low-carb meal or activity accelerates)
+  // Numbers are intentionally rough estimates; the impact strings are what the
+  // user sees on the chips and chip badges.
+  const MEAL_TAGS = [
+    { id: "low_carb", emoji: "🥗", label: "Light, low-carb", offsetHours: -2,  impact: "ketosis ~2h sooner" },
+    { id: "carby",    emoji: "🍕", label: "Big or carby",    offsetHours: 2.5, impact: "ketosis ~2–3h later" },
+    { id: "dessert",  emoji: "🍦", label: "Sugar / dessert", offsetHours: 3.5, impact: "ketosis ~3–4h later" },
+  ];
+
+  const ACTIVITY_TAGS = [
+    { id: "walk",    emoji: "🚶", label: "Walked 30+ min", offsetHours: -1.5, impact: "next stage ~1–2h sooner" },
+    { id: "workout", emoji: "💪", label: "Workout",        offsetHours: -2.5, impact: "next stage ~2–3h sooner" },
+  ];
+
+  function getMealTag(id) {
+    if (!id) return null;
+    return MEAL_TAGS.find((t) => t.id === id) || null;
+  }
+
+  function getActivityTag(id) {
+    if (!id) return null;
+    return ACTIVITY_TAGS.find((t) => t.id === id) || null;
+  }
+
+
   // ---------- Storage ----------
   function loadData() {
     try {
@@ -218,6 +246,31 @@
     return { ...STAGES[STAGES.length - 1], index: STAGES.length - 1 };
   }
 
+  // Sum of all tag offsets for a given fast (meal + activities). Used to shift
+  // the stage timeline. See MEAL_TAGS / ACTIVITY_TAGS for semantics.
+  function getFastOffsetHours(fast) {
+    if (!fast || !fast.tags) return 0;
+    let total = 0;
+    const meal = getMealTag(fast.tags.meal);
+    if (meal) total += meal.offsetHours;
+    if (Array.isArray(fast.tags.activities)) {
+      fast.tags.activities.forEach((a) => {
+        const act = getActivityTag(a && a.id);
+        if (act) total += act.offsetHours;
+      });
+    }
+    return total;
+  }
+
+  // Convert raw elapsed-since-start ms into "effective" ms by subtracting the
+  // offset. Positive offset (e.g. dessert) makes you effectively earlier in
+  // the timeline. Clamped at 0 so we never go below the Fed stage.
+  function getEffectiveElapsed(rawMs, offsetHours) {
+    const eff = rawMs - offsetHours * 3600000;
+    return eff < 0 ? 0 : eff;
+  }
+
+
   // ---------- Toast ----------
   let toastTimer = null;
   function showToast(msg) {
@@ -266,6 +319,12 @@
     editHistoryEnd: $("edit-history-end"),
     editHistoryDuration: $("edit-history-duration"),
     btnSaveHistory: $("btn-save-history"),
+    mealTagModal: $("meal-tag-modal"),
+    mealTagOptions: $("meal-tag-options"),
+    activityTagModal: $("activity-tag-modal"),
+    activityTagOptions: $("activity-tag-options"),
+    fastTagsRow: $("active-fast-tags"),
+    btnLogActivity: $("btn-log-activity"),
   };
 
   function escapeHtml(s) {
@@ -298,7 +357,9 @@
       const start = new Date(state.currentFast.startTime).getTime();
       const elapsed = Date.now() - start;
       refs.timerDisplay.textContent = formatHMS(elapsed);
-      const stage = getStageForElapsed(elapsed);
+      const offset = getFastOffsetHours(state.currentFast);
+      const effective = getEffectiveElapsed(elapsed, offset);
+      const stage = getStageForElapsed(effective);
       if (stage.index !== lastStageIndex) {
         renderStagesList(stage.index);
         lastStageIndex = stage.index;
@@ -307,8 +368,8 @@
           showToast("New stage: " + stage.emoji + " " + stage.name);
         }
       }
-      updateCurrentStageProgress(elapsed, stage);
-      updateUpcomingCountdowns(elapsed);
+      updateCurrentStageProgress(effective, stage);
+      updateUpcomingCountdowns(effective);
       return;
     }
 
@@ -377,7 +438,10 @@
     refs.stagesList.innerHTML = "";
 
     const elapsedNow = state.currentFast
-      ? Date.now() - new Date(state.currentFast.startTime).getTime()
+      ? getEffectiveElapsed(
+          Date.now() - new Date(state.currentFast.startTime).getTime(),
+          getFastOffsetHours(state.currentFast)
+        )
       : 0;
 
     STAGES.forEach((s, i) => {
@@ -472,13 +536,16 @@
     const elapsed = Date.now() - start;
     refs.timerDisplay.textContent = formatHMS(elapsed);
     refs.startedAt.textContent = formatDateTime(state.currentFast.startTime);
-    const stage = getStageForElapsed(elapsed);
+    const offset = getFastOffsetHours(state.currentFast);
+    const effective = getEffectiveElapsed(elapsed, offset);
+    const stage = getStageForElapsed(effective);
     // Force a fresh render of the list (e.g., on view-switch or visibility change)
     lastStageIndex = -1;
     renderStagesList(stage.index);
     lastStageIndex = stage.index;
-    updateCurrentStageProgress(elapsed, stage);
-    updateUpcomingCountdowns(elapsed);
+    updateCurrentStageProgress(effective, stage);
+    updateUpcomingCountdowns(effective);
+    renderActiveFastTags();
     startTicking();
   }
 
@@ -546,13 +613,29 @@
     [...state.history]
       .sort((a, b) => new Date(b.startTime) - new Date(a.startTime))
       .forEach((f) => {
-        const stage = getStageForElapsed(f.durationMs);
+        const offsetHours = getFastOffsetHours(f);
+        const effective = getEffectiveElapsed(f.durationMs, offsetHours);
+        const stage = getStageForElapsed(effective);
+        let tagEmojis = "";
+        const fastTags = f.tags || {};
+        const meal = getMealTag(fastTags.meal);
+        if (meal) tagEmojis += meal.emoji;
+        if (Array.isArray(fastTags.activities)) {
+          fastTags.activities.forEach((a) => {
+            const act = getActivityTag(a && a.id);
+            if (act) tagEmojis += act.emoji;
+          });
+        }
+        const tagsHtml = tagEmojis
+          ? '<span class="history-item-tags">' + tagEmojis + "</span>"
+          : "";
         const item = document.createElement("div");
         item.className = "history-item";
         item.innerHTML =
           '<div class="history-item-main">' +
           '<div class="history-item-date">' +
           formatDateOnly(f.startTime) +
+          tagsHtml +
           "</div>" +
           '<div class="history-item-meta">' +
           new Date(f.startTime).toLocaleTimeString(undefined, {
@@ -607,6 +690,7 @@
     saveData(state);
     renderTimerView();
     showToast("Fast started 🔥");
+    openMealTagModal();
   }
 
   function endFast() {
@@ -623,12 +707,14 @@
         return;
       }
     }
-    state.history.push({
+    const entry = {
       id: uuid(),
       startTime: state.currentFast.startTime,
       endTime: new Date(end).toISOString(),
       durationMs,
-    });
+    };
+    if (state.currentFast.tags) entry.tags = state.currentFast.tags;
+    state.history.push(entry);
     state.currentFast = null;
     saveData(state);
     renderTimerView();
@@ -866,12 +952,16 @@
     return {
       version: DATA_VERSION,
       currentFast: data.currentFast || null,
-      history: (Array.isArray(data.history) ? data.history : []).map((h) => ({
-        id: h.id || uuid(),
-        startTime: h.startTime,
-        endTime: h.endTime,
-        durationMs: h.durationMs,
-      })),
+      history: (Array.isArray(data.history) ? data.history : []).map((h) => {
+        const out = {
+          id: h.id || uuid(),
+          startTime: h.startTime,
+          endTime: h.endTime,
+          durationMs: h.durationMs,
+        };
+        if (h.tags && typeof h.tags === "object") out.tags = h.tags;
+        return out;
+      }),
       lastBackupAt: isValidIso(data.exportedAt) ? data.exportedAt : null,
     };
   }
@@ -921,6 +1011,127 @@
       e.target.value = "";
     };
     reader.readAsText(file);
+  }
+
+  // ---------- Meal / activity tag modals ----------
+  function buildTagChip(tag, onClick) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "tag-chip-btn";
+    btn.innerHTML =
+      '<span class="tag-chip-emoji">' + escapeHtml(tag.emoji) + "</span>" +
+      '<span class="tag-chip-text">' +
+      '<span class="tag-chip-label">' + escapeHtml(tag.label) + "</span>" +
+      '<span class="tag-chip-impact">' + escapeHtml(tag.impact) + "</span>" +
+      "</span>";
+    btn.addEventListener("click", onClick);
+    return btn;
+  }
+
+  function openMealTagModal() {
+    if (!refs.mealTagModal || !refs.mealTagOptions) return;
+    if (!state.currentFast) return;
+    refs.mealTagOptions.innerHTML = "";
+    MEAL_TAGS.forEach((tag) => {
+      refs.mealTagOptions.appendChild(
+        buildTagChip(tag, () => selectMealTag(tag.id))
+      );
+    });
+    refs.mealTagModal.classList.remove("hidden");
+  }
+
+  function closeMealTagModal() {
+    if (refs.mealTagModal) refs.mealTagModal.classList.add("hidden");
+  }
+
+  function selectMealTag(id) {
+    if (!state.currentFast) {
+      closeMealTagModal();
+      return;
+    }
+    if (!state.currentFast.tags) state.currentFast.tags = {};
+    state.currentFast.tags.meal = id;
+    saveData(state);
+    closeMealTagModal();
+    renderFasting();
+    const tag = getMealTag(id);
+    if (tag) showToast(tag.emoji + " " + tag.impact);
+  }
+
+  function openActivityModal() {
+    if (!refs.activityTagModal || !refs.activityTagOptions) return;
+    if (!state.currentFast) return;
+    refs.activityTagOptions.innerHTML = "";
+    ACTIVITY_TAGS.forEach((tag) => {
+      refs.activityTagOptions.appendChild(
+        buildTagChip(tag, () => logActivity(tag.id))
+      );
+    });
+    refs.activityTagModal.classList.remove("hidden");
+  }
+
+  function closeActivityModal() {
+    if (refs.activityTagModal) refs.activityTagModal.classList.add("hidden");
+  }
+
+  function logActivity(id) {
+    if (!state.currentFast) {
+      closeActivityModal();
+      return;
+    }
+    if (!state.currentFast.tags) state.currentFast.tags = {};
+    if (!Array.isArray(state.currentFast.tags.activities)) {
+      state.currentFast.tags.activities = [];
+    }
+    state.currentFast.tags.activities.push({
+      id,
+      at: new Date().toISOString(),
+    });
+    saveData(state);
+    closeActivityModal();
+    renderFasting();
+    const tag = getActivityTag(id);
+    if (tag) showToast(tag.emoji + " " + tag.impact);
+  }
+
+  function renderActiveFastTags() {
+    if (!refs.fastTagsRow) return;
+    const fast = state.currentFast;
+    if (!fast) {
+      refs.fastTagsRow.innerHTML = "";
+      refs.fastTagsRow.classList.add("hidden");
+      return;
+    }
+    const tags = fast.tags || {};
+    const chips = [];
+    const meal = getMealTag(tags.meal);
+    if (meal) {
+      chips.push(
+        '<span class="fast-tag" title="' + escapeHtml(meal.impact) + '">' +
+          escapeHtml(meal.emoji) + " " + escapeHtml(meal.label) +
+          ' <span class="fast-tag-impact">· ' + escapeHtml(meal.impact) + "</span>" +
+          "</span>"
+      );
+    }
+    if (Array.isArray(tags.activities)) {
+      tags.activities.forEach((a) => {
+        const act = getActivityTag(a && a.id);
+        if (!act) return;
+        chips.push(
+          '<span class="fast-tag" title="' + escapeHtml(act.impact) + '">' +
+            escapeHtml(act.emoji) + " " + escapeHtml(act.label) +
+            ' <span class="fast-tag-impact">· ' + escapeHtml(act.impact) + "</span>" +
+            "</span>"
+        );
+      });
+    }
+    if (chips.length === 0) {
+      refs.fastTagsRow.innerHTML = "";
+      refs.fastTagsRow.classList.add("hidden");
+    } else {
+      refs.fastTagsRow.innerHTML = chips.join("");
+      refs.fastTagsRow.classList.remove("hidden");
+    }
   }
 
   // ---------- Deck (Boost / Tips popup) ----------
@@ -1028,6 +1239,21 @@
       });
     }
 
+    if (refs.btnLogActivity)
+      refs.btnLogActivity.addEventListener("click", openActivityModal);
+    if (refs.mealTagModal) {
+      refs.mealTagModal.querySelectorAll("[data-close-meal]").forEach((el) => {
+        el.addEventListener("click", closeMealTagModal);
+      });
+    }
+    if (refs.activityTagModal) {
+      refs.activityTagModal
+        .querySelectorAll("[data-close-activity]")
+        .forEach((el) => {
+          el.addEventListener("click", closeActivityModal);
+        });
+    }
+
     if (refs.btnSaveHistory)
       refs.btnSaveHistory.addEventListener("click", saveEditedHistory);
     [refs.editHistoryStart, refs.editHistoryEnd].forEach((el) => {
@@ -1080,6 +1306,18 @@
         !refs.editHistoryModal.classList.contains("hidden")
       ) {
         closeEditHistory();
+      }
+      if (
+        refs.mealTagModal &&
+        !refs.mealTagModal.classList.contains("hidden")
+      ) {
+        closeMealTagModal();
+      }
+      if (
+        refs.activityTagModal &&
+        !refs.activityTagModal.classList.contains("hidden")
+      ) {
+        closeActivityModal();
       }
     });
 

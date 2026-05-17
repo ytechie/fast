@@ -53,6 +53,8 @@
                 <button id="btn-boost" class="btn btn-boost-trigger">💪 Boost me</button>
                 <button id="btn-tips" class="btn btn-boost-trigger">💡 Tips</button>
               </div>
+              <div id="active-fast-tags" class="fast-tags hidden"></div>
+              <button id="btn-log-activity" class="btn btn-boost-trigger">＋ Log walk or workout</button>
             </div>
 
             <div class="card stages-list-card">
@@ -74,6 +76,32 @@
               <div class="modal-actions">
                 <button class="btn btn-ghost" data-close>Cancel</button>
                 <button id="btn-save-start" class="btn btn-primary">Save</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- MEAL TAG (shown right after starting a fast) -->
+          <div id="meal-tag-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="meal-tag-title">
+            <div class="modal-backdrop" data-close-meal></div>
+            <div class="modal-panel">
+              <h3 id="meal-tag-title">How was your last meal?</h3>
+              <p class="modal-sub">Optional — helps personalize your timeline.</p>
+              <div id="meal-tag-options" class="tag-chip-options"></div>
+              <div class="modal-actions">
+                <button class="btn btn-ghost" data-close-meal>Skip</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ACTIVITY TAG (mid-fast logging) -->
+          <div id="activity-tag-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="activity-tag-title">
+            <div class="modal-backdrop" data-close-activity></div>
+            <div class="modal-panel">
+              <h3 id="activity-tag-title">Log activity</h3>
+              <p class="modal-sub">Movement burns glycogen and speeds up your stages.</p>
+              <div id="activity-tag-options" class="tag-chip-options"></div>
+              <div class="modal-actions">
+                <button class="btn btn-ghost" data-close-activity>Cancel</button>
               </div>
             </div>
           </div>
