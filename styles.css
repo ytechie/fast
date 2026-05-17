@@ -1023,7 +1023,19 @@ details.stage-row.current .stage-content {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.tag-section {
   margin-bottom: 18px;
+}
+
+.tag-section-eyebrow {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
 }
 
 .tag-chip-btn {
@@ -1049,6 +1061,11 @@ details.stage-row.current .stage-content {
   background: var(--accent-soft);
 }
 
+.tag-chip-btn.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .tag-chip-emoji {
   font-size: 26px;
   line-height: 1;
@@ -1060,6 +1077,7 @@ details.stage-row.current .stage-content {
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1;
 }
 
 .tag-chip-label {
@@ -1069,6 +1087,67 @@ details.stage-row.current .stage-content {
 .tag-chip-impact {
   font-size: 13px;
   color: var(--text-dim);
+}
+
+.tag-chip-check {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.logged-activities {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.logged-activity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 8px 8px 12px;
+  font-size: 14px;
+}
+
+.logged-activity-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.logged-activity-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.logged-activity-time {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+.logged-activity-remove {
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.logged-activity-remove:hover {
+  color: var(--danger);
+  background: rgba(248, 113, 113, 0.1);
 }
 
 /* ===== History item tag emojis ===== */

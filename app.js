@@ -354,12 +354,10 @@
     editHistoryEnd: $("edit-history-end"),
     editHistoryDuration: $("edit-history-duration"),
     btnSaveHistory: $("btn-save-history"),
-    mealTagModal: $("meal-tag-modal"),
-    mealTagOptions: $("meal-tag-options"),
-    activityTagModal: $("activity-tag-modal"),
-    activityTagOptions: $("activity-tag-options"),
+    tagsModal: $("tags-modal"),
+    tagsModalBody: $("tags-modal-body"),
     fastTagsRow: $("active-fast-tags"),
-    btnLogActivity: $("btn-log-activity"),
+    btnOpenTags: $("btn-open-tags"),
   };
 
   function escapeHtml(s) {
@@ -751,7 +749,6 @@
     saveData(state);
     renderTimerView();
     showToast("Fast started 🔥");
-    openMealTagModal();
   }
 
   function endFast() {
@@ -1074,72 +1071,138 @@
     reader.readAsText(file);
   }
 
-  // ---------- Meal / activity tag modals ----------
-  function buildTagChip(tag, onClick) {
+  // ---------- Tags modal (combined meal + activity) ----------
+  function formatTimeOfDay(iso) {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
+
+  function buildTagChip(tag, opts) {
+    const selected = !!(opts && opts.selected);
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "tag-chip-btn";
+    btn.className = "tag-chip-btn" + (selected ? " selected" : "");
     btn.innerHTML =
       '<span class="tag-chip-emoji">' + escapeHtml(tag.emoji) + "</span>" +
       '<span class="tag-chip-text">' +
       '<span class="tag-chip-label">' + escapeHtml(tag.label) + "</span>" +
       '<span class="tag-chip-impact">' + escapeHtml(tag.impact) + "</span>" +
-      "</span>";
-    btn.addEventListener("click", onClick);
+      "</span>" +
+      (selected ? '<span class="tag-chip-check" aria-hidden="true">✓</span>' : "");
+    if (selected) btn.setAttribute("aria-pressed", "true");
+    btn.addEventListener("click", opts && opts.onClick);
     return btn;
   }
 
-  function openMealTagModal() {
-    if (!refs.mealTagModal || !refs.mealTagOptions) return;
+  function openTagsModal() {
+    if (!refs.tagsModal) return;
     if (!state.currentFast) return;
-    refs.mealTagOptions.innerHTML = "";
+    renderTagsModalBody();
+    refs.tagsModal.classList.remove("hidden");
+  }
+
+  function closeTagsModal() {
+    if (refs.tagsModal) refs.tagsModal.classList.add("hidden");
+  }
+
+  function renderTagsModalBody() {
+    if (!refs.tagsModalBody || !state.currentFast) return;
+    const tags = state.currentFast.tags || {};
+    refs.tagsModalBody.innerHTML = "";
+
+    // --- Last meal section (single-select; tap again to deselect) ---
+    const mealSection = document.createElement("div");
+    mealSection.className = "tag-section";
+    mealSection.innerHTML = '<div class="tag-section-eyebrow">Last meal</div>';
+    const mealOptions = document.createElement("div");
+    mealOptions.className = "tag-chip-options";
     MEAL_TAGS.forEach((tag) => {
-      refs.mealTagOptions.appendChild(
-        buildTagChip(tag, () => selectMealTag(tag.id))
+      const isSelected = tags.meal === tag.id;
+      mealOptions.appendChild(
+        buildTagChip(tag, {
+          selected: isSelected,
+          onClick: () => toggleMealTag(tag.id),
+        })
       );
     });
-    refs.mealTagModal.classList.remove("hidden");
+    mealSection.appendChild(mealOptions);
+    refs.tagsModalBody.appendChild(mealSection);
+
+    // --- Log an activity section ---
+    const actSection = document.createElement("div");
+    actSection.className = "tag-section";
+    actSection.innerHTML =
+      '<div class="tag-section-eyebrow">Log an activity</div>';
+    const actOptions = document.createElement("div");
+    actOptions.className = "tag-chip-options";
+    ACTIVITY_TAGS.forEach((tag) => {
+      actOptions.appendChild(
+        buildTagChip(tag, { onClick: () => addActivityTag(tag.id) })
+      );
+    });
+    actSection.appendChild(actOptions);
+    refs.tagsModalBody.appendChild(actSection);
+
+    // --- Logged activities (with remove buttons) ---
+    const activities = Array.isArray(tags.activities) ? tags.activities : [];
+    if (activities.length > 0) {
+      const loggedSection = document.createElement("div");
+      loggedSection.className = "tag-section";
+      loggedSection.innerHTML =
+        '<div class="tag-section-eyebrow">Logged</div>';
+      const list = document.createElement("ul");
+      list.className = "logged-activities";
+      activities.forEach((a, idx) => {
+        const act = getActivityTag(a && a.id);
+        if (!act) return;
+        const li = document.createElement("li");
+        li.className = "logged-activity";
+        li.innerHTML =
+          '<span class="logged-activity-emoji">' + escapeHtml(act.emoji) + "</span>" +
+          '<span class="logged-activity-label">' + escapeHtml(act.label) +
+          '<span class="logged-activity-time"> · ' + escapeHtml(formatTimeOfDay(a.at)) + "</span>" +
+          "</span>";
+        const rm = document.createElement("button");
+        rm.type = "button";
+        rm.className = "logged-activity-remove";
+        rm.setAttribute("aria-label", "Remove " + act.label);
+        rm.title = "Remove";
+        rm.textContent = "×";
+        rm.addEventListener("click", () => removeActivity(idx));
+        li.appendChild(rm);
+        list.appendChild(li);
+      });
+      loggedSection.appendChild(list);
+      refs.tagsModalBody.appendChild(loggedSection);
+    }
   }
 
-  function closeMealTagModal() {
-    if (refs.mealTagModal) refs.mealTagModal.classList.add("hidden");
-  }
-
-  function selectMealTag(id) {
-    if (!state.currentFast) {
-      closeMealTagModal();
+  function toggleMealTag(id) {
+    if (!state.currentFast) return;
+    if (!state.currentFast.tags) state.currentFast.tags = {};
+    if (state.currentFast.tags.meal === id) {
+      // Tap the currently-selected chip to deselect.
+      delete state.currentFast.tags.meal;
+      saveData(state);
+      renderFasting();
+      renderTagsModalBody();
+      showToast("Meal tag removed");
       return;
     }
-    if (!state.currentFast.tags) state.currentFast.tags = {};
     state.currentFast.tags.meal = id;
     saveData(state);
-    closeMealTagModal();
     renderFasting();
+    renderTagsModalBody();
     const tag = getMealTag(id);
     if (tag) showToast(tag.emoji + " " + tag.impact);
   }
 
-  function openActivityModal() {
-    if (!refs.activityTagModal || !refs.activityTagOptions) return;
+  function addActivityTag(id) {
     if (!state.currentFast) return;
-    refs.activityTagOptions.innerHTML = "";
-    ACTIVITY_TAGS.forEach((tag) => {
-      refs.activityTagOptions.appendChild(
-        buildTagChip(tag, () => logActivity(tag.id))
-      );
-    });
-    refs.activityTagModal.classList.remove("hidden");
-  }
-
-  function closeActivityModal() {
-    if (refs.activityTagModal) refs.activityTagModal.classList.add("hidden");
-  }
-
-  function logActivity(id) {
-    if (!state.currentFast) {
-      closeActivityModal();
-      return;
-    }
     if (!state.currentFast.tags) state.currentFast.tags = {};
     if (!Array.isArray(state.currentFast.tags.activities)) {
       state.currentFast.tags.activities = [];
@@ -1149,10 +1212,24 @@
       at: new Date().toISOString(),
     });
     saveData(state);
-    closeActivityModal();
     renderFasting();
+    renderTagsModalBody();
     const tag = getActivityTag(id);
     if (tag) showToast(tag.emoji + " " + tag.impact);
+  }
+
+  function removeActivity(index) {
+    if (!state.currentFast || !state.currentFast.tags) return;
+    const activities = state.currentFast.tags.activities;
+    if (!Array.isArray(activities) || index < 0 || index >= activities.length) return;
+    const removed = activities[index];
+    activities.splice(index, 1);
+    if (activities.length === 0) delete state.currentFast.tags.activities;
+    saveData(state);
+    renderFasting();
+    renderTagsModalBody();
+    const tag = removed && getActivityTag(removed.id);
+    showToast("Removed" + (tag ? ": " + tag.emoji + " " + tag.label : ""));
   }
 
   function renderActiveFastTags() {
@@ -1300,19 +1377,12 @@
       });
     }
 
-    if (refs.btnLogActivity)
-      refs.btnLogActivity.addEventListener("click", openActivityModal);
-    if (refs.mealTagModal) {
-      refs.mealTagModal.querySelectorAll("[data-close-meal]").forEach((el) => {
-        el.addEventListener("click", closeMealTagModal);
+    if (refs.btnOpenTags)
+      refs.btnOpenTags.addEventListener("click", openTagsModal);
+    if (refs.tagsModal) {
+      refs.tagsModal.querySelectorAll("[data-close-tags]").forEach((el) => {
+        el.addEventListener("click", closeTagsModal);
       });
-    }
-    if (refs.activityTagModal) {
-      refs.activityTagModal
-        .querySelectorAll("[data-close-activity]")
-        .forEach((el) => {
-          el.addEventListener("click", closeActivityModal);
-        });
     }
 
     if (refs.btnSaveHistory)
@@ -1369,16 +1439,10 @@
         closeEditHistory();
       }
       if (
-        refs.mealTagModal &&
-        !refs.mealTagModal.classList.contains("hidden")
+        refs.tagsModal &&
+        !refs.tagsModal.classList.contains("hidden")
       ) {
-        closeMealTagModal();
-      }
-      if (
-        refs.activityTagModal &&
-        !refs.activityTagModal.classList.contains("hidden")
-      ) {
-        closeActivityModal();
+        closeTagsModal();
       }
     });
 
