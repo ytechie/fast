@@ -1,8 +1,9 @@
 /* Simple offline-first cache for the OMAD app shell. */
-const CACHE_NAME = "omad-v24";
+const CACHE_NAME = "omad-v25";
 const ASSETS = [
   "./",
   "./index.html",
+  "./science.html",
   "./styles.css",
   "./app.js",
   "./manifest.json",

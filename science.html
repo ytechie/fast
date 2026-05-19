@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#0b0d10" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="OMAD" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>The Science · OMAD Fast</title>
+    <style>
+      .science-wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+      .science-wrap h2 { margin: 28px 0 8px; font-size: 1.15rem; }
+      .science-wrap h3 { margin: 20px 0 6px; font-size: 1rem; }
+      .science-wrap p, .science-wrap li { line-height: 1.5; color: var(--text, #e6e8eb); }
+      .science-wrap .small { color: var(--muted, #9aa3ad); font-size: 0.9rem; }
+      .science-wrap ul { padding-left: 1.2rem; }
+      .science-wrap a { color: var(--accent, #ff7a45); }
+      .science-wrap .disclaimer {
+        border-left: 3px solid var(--accent, #ff7a45);
+        padding: 10px 14px;
+        background: rgba(255,122,69,0.08);
+        border-radius: 6px;
+        margin: 12px 0 20px;
+      }
+      .science-wrap .stage-block {
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin: 12px 0;
+        background: rgba(255,255,255,0.02);
+      }
+      .science-wrap .stage-block h3 { margin-top: 0; }
+      .science-wrap .stage-block .stage-range {
+        color: var(--muted, #9aa3ad);
+        font-size: 0.85rem;
+        margin-left: 6px;
+        font-weight: normal;
+      }
+      .science-wrap .refs { font-size: 0.88rem; color: var(--muted, #9aa3ad); }
+      .science-wrap .refs a { word-break: break-word; }
+      .science-wrap .back-link {
+        display: inline-block;
+        margin-bottom: 12px;
+        color: var(--accent, #ff7a45);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .science-wrap .nuance {
+        font-size: 0.9rem;
+        color: var(--muted, #9aa3ad);
+        font-style: italic;
+        margin-top: 6px;
+      }
+      .science-wrap hr {
+        border: 0;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        margin: 24px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <main class="app-main">
+        <div class="science-wrap">
+          <a class="back-link" href="./index.html">← Back to OMAD</a>
+          <h1>The science behind the stages</h1>
+          <p class="small">A plain-English walkthrough of what the app is modeling, why those time windows were chosen, and links to the research each claim is based on.</p>
+
+          <div class="disclaimer">
+            <strong>Not medical advice.</strong> This page is for educational and personal-curiosity purposes only. Everyone's metabolism is different — the times below are population-level estimates from research, not predictions for any individual. Fasting can be risky for people with diabetes, eating disorders, or who are pregnant, breastfeeding, or on certain medications. Talk to a clinician before changing how you eat.
+          </div>
+
+          <h2>The big idea: the "metabolic switch"</h2>
+          <p>
+            Intermittent fasting research is built around a concept called the
+            <em>metabolic switch</em> — the transition from running primarily on
+            glucose (sugar) and liver glycogen to running primarily on fat and
+            ketone bodies. The depletion of liver glycogen during a fast triggers
+            fat mobilization and ketogenesis, and most of the claimed benefits of
+            time-restricted eating come from spending time on the fat-burning side
+            of that switch.
+          </p>
+          <p class="refs">
+            Primary review: de Cabo R, Mattson MP.
+            <a href="https://www.nejm.org/doi/full/10.1056/NEJMra1905136" target="_blank" rel="noopener">Effects of Intermittent Fasting on Health, Aging, and Disease.</a>
+            <em>N Engl J Med</em>. 2019;381(26):2541–2551.
+          </p>
+
+          <hr />
+
+          <h2>The five stages, with citations</h2>
+
+          <div class="stage-block">
+            <h3>🍽️ Fed / Anabolic <span class="stage-range">0–4h</span></h3>
+            <p>
+              After a meal, blood glucose and insulin rise. Insulin's job is to
+              move glucose into cells and shut down fat burning while incoming
+              fuel is being processed. Excess carbohydrate is stored as
+              glycogen in the liver (~70–100g) and skeletal muscle; excess
+              energy beyond that is stored as fat.
+            </p>
+            <p class="nuance">
+              The 4-hour boundary is approximate — bigger or carb-heavy meals
+              keep insulin elevated longer, which is why the "carby meal" tag
+              shifts the timeline.
+            </p>
+            <p class="refs">
+              Tabular reference for postprandial insulin/glucose response and glycogen storage:
+              <a href="https://www.ncbi.nlm.nih.gov/books/NBK279023/" target="_blank" rel="noopener">Endotext: Physiology of Insulin Secretion</a>
+              · Frayn KN, <em>Metabolic Regulation: A Human Perspective</em> (Wiley) — the standard text for this material.
+            </p>
+          </div>
+
+          <div class="stage-block">
+            <h3>⏳ Early Fasting <span class="stage-range">4–12h</span></h3>
+            <p>
+              Once digestion winds down, insulin falls. The body draws on
+              circulating glucose first, then begins releasing glucose from
+              liver glycogen to keep blood sugar steady. Gluconeogenesis
+              (making glucose from non-carb sources like amino acids and
+              glycerol) starts ramping up.
+            </p>
+            <p class="nuance">
+              By the end of an overnight fast (~12h), liver glycogen is
+              typically about 50% depleted — which is why the next stage starts
+              around then.
+            </p>
+            <p class="refs">
+              Rothman DL, Magnusson I, Katz LD, Shulman RG, Shulman GI.
+              <a href="https://www.science.org/doi/10.1126/science.1948033" target="_blank" rel="noopener">Quantitation of hepatic glycogenolysis and gluconeogenesis in fasting humans with 13C NMR.</a>
+              <em>Science</em>. 1991;254(5031):573–576. Direct measurement of glycogen decline and rising gluconeogenesis through the first ~22h.
+            </p>
+          </div>
+
+          <div class="stage-block">
+            <h3>🔄 Metabolic Switch <span class="stage-range">12–18h</span></h3>
+            <p>
+              This is the "switch" itself. Liver glycogen drops to ~30% or
+              lower, lipolysis (fat breakdown) accelerates, and the liver
+              begins producing low levels of ketone bodies. Norepinephrine
+              rises slightly — which is why fasted people often report a
+              calmer, more alert kind of focus rather than the foggy crash you
+              might expect.
+            </p>
+            <p class="nuance">
+              The exact timing varies a lot by person, prior diet, and activity
+              level. People already adapted to lower-carb eating cross this
+              earlier; people coming off a high-carb day cross it later.
+            </p>
+            <p class="refs">
+              Zauner C, Schneeweiss B, Kranz A, et al.
+              <a href="https://pubmed.ncbi.nlm.nih.gov/10837292/" target="_blank" rel="noopener">Resting energy expenditure in short-term starvation is increased as a result of an increase in serum norepinephrine.</a>
+              <em>Am J Clin Nutr</em>. 2000;71(6):1511–1515. Documents the norepinephrine rise (and the surprising <em>increase</em> in metabolic rate, not decrease) during a multi-day fast.
+              <br />
+              Also: Anton SD, Moehl K, Donahoo WT, et al.
+              <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5783752/" target="_blank" rel="noopener">Flipping the Metabolic Switch: Understanding and Applying the Health Benefits of Fasting.</a>
+              <em>Obesity</em>. 2018;26(2):254–268.
+            </p>
+          </div>
+
+          <div class="stage-block">
+            <h3>🧠 Ketogenesis Rising <span class="stage-range">18–24h</span></h3>
+            <p>
+              With glycogen mostly gone, the liver shifts production toward
+              ketone bodies — primarily beta-hydroxybutyrate (BHB) and
+              acetoacetate. Many people cross BHB &gt; 0.5 mmol/L in this
+              window. That number is the widely-cited threshold for
+              <em>nutritional ketosis</em>, the point at which the brain starts
+              meaningfully using ketones alongside glucose.
+            </p>
+            <p class="nuance">
+              0.5 mmol/L is a convention, not a magic number — it's the cutoff
+              popularized by Phinney and Volek that's become the de-facto
+              definition in research and consumer devices. Individual blood
+              levels at 18–24h range from ~0.2 to well over 1.0 mmol/L.
+            </p>
+            <p class="refs">
+              Phinney SD, Volek JS.
+              <em>The Art and Science of Low Carbohydrate Living</em>. Beyond Obesity LLC; 2011. (Origin of the 0.5 mmol/L "nutritional ketosis" threshold.)
+              <br />
+              Cahill GF Jr.
+              <a href="https://www.annualreviews.org/doi/10.1146/annurev.nutr.26.061505.111258" target="_blank" rel="noopener">Fuel metabolism in starvation.</a>
+              <em>Annu Rev Nutr</em>. 2006;26:1–22. The classic paper on the timeline of ketone rise and the brain's switch to ketones as a fuel source.
+            </p>
+          </div>
+
+          <div class="stage-block">
+            <h3>🔥 Sustained Ketosis <span class="stage-range">24h+</span></h3>
+            <p>
+              By 24 hours, liver glycogen is essentially gone. The body runs
+              primarily on fat and ketones; BHB typically continues climbing
+              toward 1–2 mmol/L over the next day. Growth hormone secretion
+              rises sharply during this window — studies have measured
+              multi-fold increases in GH pulse amplitude after 24 hours
+              without food.
+            </p>
+            <p class="nuance">
+              <strong>Autophagy caveat:</strong> autophagy (cellular
+              "self-cleaning") is the most over-hyped fasting benefit. Robust
+              measurements in humans mostly come from fasts of ~48h or longer.
+              At 24h there's plausibly <em>some</em> increase in autophagy
+              markers, but most of the dramatic "autophagy starts at 16/18/24
+              hours" claims you'll see online are extrapolated from rodent
+              studies. Be skeptical.
+            </p>
+            <p class="refs">
+              Hartman ML, Veldhuis JD, Johnson ML, et al.
+              <a href="https://academic.oup.com/jcem/article-abstract/74/4/757/2652927" target="_blank" rel="noopener">Augmented growth hormone (GH) secretory burst frequency and amplitude, increased GH half-life, and enhanced 24-hour GH production rates in two-day fasted normal men.</a>
+              <em>J Clin Endocrinol Metab</em>. 1992;74(4):757–765.
+              <br />
+              Bagherniya M, Butler AE, Barreto GE, Sahebkar A.
+              <a href="https://www.sciencedirect.com/science/article/pii/S1568163718301478" target="_blank" rel="noopener">The effect of fasting or calorie restriction on autophagy induction: A review of the literature.</a>
+              <em>Ageing Res Rev</em>. 2018;47:183–197. Good summary of what we can and can't say about autophagy in humans.
+            </p>
+          </div>
+
+          <hr />
+
+          <h2>The tag math, explained</h2>
+          <p>
+            The "Tag this fast" controls shift the stage timeline by a fixed
+            number of hours. These offsets are <strong>rough estimates</strong>
+            chosen to be directionally correct, not precise predictions. The
+            actual effect on any individual will depend on body composition,
+            activity, prior meals, and many other factors.
+          </p>
+
+          <h3>🥗 Light, low-carb meal (−2h)</h3>
+          <p>
+            A meal that's mostly protein and fat with minimal carbohydrate
+            keeps insulin lower and leaves less glycogen to deplete, so the
+            metabolic switch arrives earlier. A −2h offset corresponds to the
+            faster ketone rise consistently seen in low-carb-adapted subjects.
+          </p>
+
+          <h3>🍕 Big or carby meal (+2.5h) · 🍦 Sugar / dessert (+3.5h)</h3>
+          <p>
+            High-carb or high-sugar meals top up liver glycogen and keep
+            insulin elevated longer. The body burns through that fuel first
+            before reaching for fat, which pushes the entire stage timeline
+            later by several hours. The bigger the carb/sugar load, the bigger
+            the delay.
+          </p>
+
+          <h3>🚶 Walked 30+ min (−1.5h) · 💪 Workout (−2.5h)</h3>
+          <p>
+            Physical activity, especially anything that taxes muscle glycogen,
+            drains your carbohydrate stores faster. With less glycogen left to
+            burn through, the switch to fat and ketones happens earlier. This
+            is one of the better-supported tag offsets in the app.
+          </p>
+          <p class="refs">
+            Volek JS, Freidenreich DJ, Saenz C, et al.
+            <a href="https://pubmed.ncbi.nlm.nih.gov/26643054/" target="_blank" rel="noopener">Metabolic characteristics of keto-adapted ultra-endurance runners.</a>
+            <em>Metabolism</em>. 2016;65(3):100–110. Shows how exercise interacts with fat-adaptation and ketone availability.
+          </p>
+
+          <h3>🍷 Alcohol (+2h)</h3>
+          <p>
+            This one is interesting and counter-intuitive. Even <em>zero-carb</em>
+            alcohol (spirits, dry wine) pauses ketogenesis. The liver
+            metabolizes ethanol via reactions that consume NAD+ and pile up
+            NADH. Both fat oxidation (β-oxidation) and ketone production need
+            NAD+ as a cofactor — so while the liver is busy clearing ethanol,
+            those pathways stall. The +2h offset reflects roughly how long
+            ketogenesis is suppressed per typical drink.
+          </p>
+          <p class="refs">
+            Lieber CS.
+            <a href="https://pubmed.ncbi.nlm.nih.gov/15208005/" target="_blank" rel="noopener">Alcoholic fatty liver: its pathogenesis and mechanism of progression to inflammation and fibrosis.</a>
+            <em>Alcohol</em>. 2004;34(1):9–19. Covers the NAD+/NADH shift and its effect on hepatic lipid metabolism.
+          </p>
+
+          <h3>🍩 Cheat day (no timeline impact)</h3>
+          <p>
+            Cheat day is a record-keeping tag only — it doesn't shift the
+            stages because if you weren't really doing OMAD, the model's
+            assumptions don't apply. It's there so you can spot patterns in
+            your own data later.
+          </p>
+
+          <hr />
+
+          <h2>Things this app is intentionally <em>not</em> modeling</h2>
+          <ul>
+            <li><strong>Calories.</strong> OMAD's benefits come partly from the eating window and partly from natural calorie reduction. The app tracks time, not food.</li>
+            <li><strong>Macronutrient ratios.</strong> Two "big carby" meals can have very different effects depending on fiber, fat content, and order of eating. The tag is a rough proxy.</li>
+            <li><strong>Personal adaptation.</strong> Someone who's been doing OMAD for 6 months will cross every stage earlier than someone on day 3. The app uses population-level averages.</li>
+            <li><strong>Blood ketone or glucose measurement.</strong> If you want a real number for your own body, a CGM or a blood ketone meter is the only way.</li>
+          </ul>
+
+          <hr />
+
+          <h2>Further reading</h2>
+          <ul class="refs">
+            <li>de Cabo R, Mattson MP. <a href="https://www.nejm.org/doi/full/10.1056/NEJMra1905136" target="_blank" rel="noopener">Effects of Intermittent Fasting on Health, Aging, and Disease.</a> <em>N Engl J Med</em>. 2019.</li>
+            <li>Anton SD, et al. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5783752/" target="_blank" rel="noopener">Flipping the Metabolic Switch.</a> <em>Obesity</em>. 2018.</li>
+            <li>Cahill GF Jr. <a href="https://www.annualreviews.org/doi/10.1146/annurev.nutr.26.061505.111258" target="_blank" rel="noopener">Fuel metabolism in starvation.</a> <em>Annu Rev Nutr</em>. 2006.</li>
+            <li>Patterson RE, Sears DD. <a href="https://www.annualreviews.org/doi/10.1146/annurev-nutr-071816-064634" target="_blank" rel="noopener">Metabolic Effects of Intermittent Fasting.</a> <em>Annu Rev Nutr</em>. 2017.</li>
+            <li>Sutton EF, et al. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6411086/" target="_blank" rel="noopener">Early Time-Restricted Feeding Improves Insulin Sensitivity, Blood Pressure, and Oxidative Stress Even without Weight Loss in Men with Prediabetes.</a> <em>Cell Metab</em>. 2018.</li>
+          </ul>
+
+          <p class="small" style="margin-top:28px;">
+            Found a mistake or a better citation? This app is open source —
+            file an issue or a PR.
+          </p>
+          <p style="margin-top:12px;">
+            <a class="back-link" href="./index.html">← Back to OMAD</a>
+          </p>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

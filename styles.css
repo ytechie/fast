@@ -405,6 +405,21 @@ h3 {
   letter-spacing: 0.04em;
 }
 
+.card-footer-link {
+  display: block;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+  text-align: center;
+}
+.card-footer-link:hover,
+.card-footer-link:focus-visible {
+  color: var(--accent);
+}
+
 .stages-list {
   display: flex;
   flex-direction: column;
