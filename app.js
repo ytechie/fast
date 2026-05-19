@@ -140,6 +140,18 @@
     { id: "workout", emoji: "💪", label: "Workout",        offsetHours: -2.5, impact: "next stage ~2–3h sooner" },
   ];
 
+  // Day-level notes that flag what kind of day this was. These do not shift the
+  // stage timeline — they're for the user's own record-keeping.
+  const NOTE_TAGS = [
+    { id: "cheat_day", emoji: "🍩", label: "Cheat day", impact: "off-routine day" },
+  ];
+
+  // Drinks consumed during the eating window. These do shift the timeline
+  // (alcohol pauses ketogenesis while the liver metabolizes it).
+  const DRINK_TAGS = [
+    { id: "alcohol", emoji: "🍷", label: "Alcohol", offsetHours: 2, impact: "ketosis ~2h later" },
+  ];
+
   function getMealTag(id) {
     if (!id) return null;
     return MEAL_TAGS.find((t) => t.id === id) || null;
@@ -148,6 +160,16 @@
   function getActivityTag(id) {
     if (!id) return null;
     return ACTIVITY_TAGS.find((t) => t.id === id) || null;
+  }
+
+  function getNoteTag(id) {
+    if (!id) return null;
+    return NOTE_TAGS.find((t) => t.id === id) || null;
+  }
+
+  function getDrinkTag(id) {
+    if (!id) return null;
+    return DRINK_TAGS.find((t) => t.id === id) || null;
   }
 
 
@@ -242,6 +264,8 @@
     let total = 0;
     const meal = getMealTag(fast.tags.meal);
     if (meal) total += meal.offsetHours;
+    const drink = getDrinkTag(fast.tags.drink);
+    if (drink) total += drink.offsetHours;
     if (Array.isArray(fast.tags.activities)) {
       fast.tags.activities.forEach((a) => {
         const act = getActivityTag(a && a.id);
@@ -679,6 +703,10 @@
         const fastTags = f.tags || {};
         const meal = getMealTag(fastTags.meal);
         if (meal) tagEmojis += meal.emoji;
+        const drink = getDrinkTag(fastTags.drink);
+        if (drink) tagEmojis += drink.emoji;
+        const note = getNoteTag(fastTags.note);
+        if (note) tagEmojis += note.emoji;
         if (Array.isArray(fastTags.activities)) {
           fastTags.activities.forEach((a) => {
             const act = getActivityTag(a && a.id);
@@ -1132,6 +1160,42 @@
     mealSection.appendChild(mealOptions);
     refs.tagsModalBody.appendChild(mealSection);
 
+    // --- Drinks section (single-select; alcohol shifts the timeline) ---
+    const drinkSection = document.createElement("div");
+    drinkSection.className = "tag-section";
+    drinkSection.innerHTML = '<div class="tag-section-eyebrow">Drinks</div>';
+    const drinkOptions = document.createElement("div");
+    drinkOptions.className = "tag-chip-options";
+    DRINK_TAGS.forEach((tag) => {
+      const isSelected = tags.drink === tag.id;
+      drinkOptions.appendChild(
+        buildTagChip(tag, {
+          selected: isSelected,
+          onClick: () => toggleDrinkTag(tag.id),
+        })
+      );
+    });
+    drinkSection.appendChild(drinkOptions);
+    refs.tagsModalBody.appendChild(drinkSection);
+
+    // --- Day note section (single-select; no timeline impact) ---
+    const noteSection = document.createElement("div");
+    noteSection.className = "tag-section";
+    noteSection.innerHTML = '<div class="tag-section-eyebrow">Day note</div>';
+    const noteOptions = document.createElement("div");
+    noteOptions.className = "tag-chip-options";
+    NOTE_TAGS.forEach((tag) => {
+      const isSelected = tags.note === tag.id;
+      noteOptions.appendChild(
+        buildTagChip(tag, {
+          selected: isSelected,
+          onClick: () => toggleNoteTag(tag.id),
+        })
+      );
+    });
+    noteSection.appendChild(noteOptions);
+    refs.tagsModalBody.appendChild(noteSection);
+
     // --- Log an activity section ---
     const actSection = document.createElement("div");
     actSection.className = "tag-section";
@@ -1201,6 +1265,44 @@
     if (tag) showToast(tag.emoji + " " + tag.impact);
   }
 
+  function toggleDrinkTag(id) {
+    if (!state.currentFast) return;
+    if (!state.currentFast.tags) state.currentFast.tags = {};
+    if (state.currentFast.tags.drink === id) {
+      delete state.currentFast.tags.drink;
+      saveData(state);
+      renderFasting();
+      renderTagsModalBody();
+      showToast("Drink tag removed");
+      return;
+    }
+    state.currentFast.tags.drink = id;
+    saveData(state);
+    renderFasting();
+    renderTagsModalBody();
+    const tag = getDrinkTag(id);
+    if (tag) showToast(tag.emoji + " " + tag.impact);
+  }
+
+  function toggleNoteTag(id) {
+    if (!state.currentFast) return;
+    if (!state.currentFast.tags) state.currentFast.tags = {};
+    if (state.currentFast.tags.note === id) {
+      delete state.currentFast.tags.note;
+      saveData(state);
+      renderFasting();
+      renderTagsModalBody();
+      showToast("Day note removed");
+      return;
+    }
+    state.currentFast.tags.note = id;
+    saveData(state);
+    renderFasting();
+    renderTagsModalBody();
+    const tag = getNoteTag(id);
+    if (tag) showToast(tag.emoji + " " + tag.label);
+  }
+
   function addActivityTag(id) {
     if (!state.currentFast) return;
     if (!state.currentFast.tags) state.currentFast.tags = {};
@@ -1248,6 +1350,23 @@
         '<span class="fast-tag" title="' + escapeHtml(meal.impact) + '">' +
           escapeHtml(meal.emoji) + " " + escapeHtml(meal.label) +
           ' <span class="fast-tag-impact">· ' + escapeHtml(meal.impact) + "</span>" +
+          "</span>"
+      );
+    }
+    const drink = getDrinkTag(tags.drink);
+    if (drink) {
+      chips.push(
+        '<span class="fast-tag" title="' + escapeHtml(drink.impact) + '">' +
+          escapeHtml(drink.emoji) + " " + escapeHtml(drink.label) +
+          ' <span class="fast-tag-impact">· ' + escapeHtml(drink.impact) + "</span>" +
+          "</span>"
+      );
+    }
+    const note = getNoteTag(tags.note);
+    if (note) {
+      chips.push(
+        '<span class="fast-tag" title="' + escapeHtml(note.impact) + '">' +
+          escapeHtml(note.emoji) + " " + escapeHtml(note.label) +
           "</span>"
       );
     }
