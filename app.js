@@ -1588,32 +1588,34 @@
     renderHistoryView();
   }
 
-  // Register service worker (PWA) and detect updates
-  function showUpdateBanner() {
-    const banner = document.getElementById("update-banner");
-    if (!banner) return;
-    banner.classList.remove("hidden");
-    // Force reflow so the .show transition runs
-    void banner.offsetWidth;
-    banner.classList.add("show");
+  // Register service worker (PWA) and detect updates.
+  // Update strategy: silent. When a new version is ready, we wait until the
+  // user backgrounds the app and then brings it back to the foreground, then
+  // reload. This way they never see a flash mid-interaction and always come
+  // back to the latest version.
+  let updatePending = false;
+  let wasHidden = false;
+
+  function scheduleSilentReload() {
+    if (updatePending) return;
+    updatePending = true;
   }
 
-  function hideUpdateBanner() {
-    const banner = document.getElementById("update-banner");
-    if (!banner) return;
-    banner.classList.remove("show");
-    setTimeout(() => banner.classList.add("hidden"), 300);
-  }
-
-  function wireUpdateBanner() {
-    const refreshBtn = document.getElementById("btn-update-refresh");
-    const dismissBtn = document.getElementById("btn-update-dismiss");
-    if (refreshBtn) {
-      refreshBtn.addEventListener("click", () => window.location.reload());
-    }
-    if (dismissBtn) {
-      dismissBtn.addEventListener("click", hideUpdateBanner);
-    }
+  function wireSilentReload() {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        wasHidden = true;
+        return;
+      }
+      if (
+        document.visibilityState === "visible" &&
+        wasHidden &&
+        updatePending
+      ) {
+        // Returned from background with an update waiting → refresh quietly.
+        window.location.reload();
+      }
+    });
   }
 
   // ---------- Install prompt (Android native + iOS instructions) ----------
@@ -1758,12 +1760,12 @@
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-      wireUpdateBanner();
+      wireSilentReload();
       wireInstallPrompt();
       navigator.serviceWorker
         .register("service-worker.js")
         .then((reg) => {
-          // If a new worker is found later, watch it install and prompt.
+          // If a new worker is found later, watch it install and schedule a reload.
           reg.addEventListener("updatefound", () => {
             const newWorker = reg.installing;
             if (!newWorker) return;
@@ -1773,13 +1775,13 @@
                 navigator.serviceWorker.controller
               ) {
                 // New SW installed AND we already had a controller → this is an update.
-                showUpdateBanner();
+                scheduleSilentReload();
               }
             });
           });
           // Edge case: a worker was already waiting when we loaded.
           if (reg.waiting && navigator.serviceWorker.controller) {
-            showUpdateBanner();
+            scheduleSilentReload();
           }
         })
         .catch((err) => {
