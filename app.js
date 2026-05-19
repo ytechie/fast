@@ -427,6 +427,89 @@
     toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
   }
 
+  // ---------- Stage notifications ----------
+  const NOTIFY_KEY = "omad-notify-stage";
+
+  function notificationsSupported() {
+    return typeof window !== "undefined" && "Notification" in window;
+  }
+
+  function notificationsEnabled() {
+    try {
+      return localStorage.getItem(NOTIFY_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function setNotificationsEnabled(v) {
+    try {
+      localStorage.setItem(NOTIFY_KEY, v ? "1" : "0");
+    } catch {}
+  }
+
+  async function fireStageNotification(stage) {
+    if (!notificationsEnabled() || !notificationsSupported()) return;
+    if (Notification.permission !== "granted") return;
+    const title = stage.emoji + " " + stage.name;
+    const body = (stage.whatHappens || "").split(". ")[0] + ".";
+    const opts = {
+      body,
+      icon: "icon.svg",
+      badge: "icon.svg",
+      tag: "omad-stage",
+      renotify: true,
+    };
+    try {
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg && reg.showNotification) {
+          reg.showNotification(title, opts);
+          return;
+        }
+      }
+      new Notification(title, opts);
+    } catch (e) {
+      console.warn("notification failed", e);
+    }
+  }
+
+  async function toggleStageNotifications() {
+    if (notificationsEnabled()) {
+      setNotificationsEnabled(false);
+      showToast("🔕 Stage notifications off");
+      updateNotifyButton();
+      return;
+    }
+    if (!notificationsSupported()) {
+      showToast("Notifications not supported in this browser");
+      return;
+    }
+    let perm = Notification.permission;
+    if (perm === "default") {
+      try {
+        perm = await Notification.requestPermission();
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+    if (perm === "granted") {
+      setNotificationsEnabled(true);
+      showToast("🔔 Stage notifications on");
+      updateNotifyButton();
+    } else if (perm === "denied") {
+      showToast("Notifications blocked — enable in browser settings");
+    }
+  }
+
+  function updateNotifyButton() {
+    const btn = document.getElementById("btn-toggle-notify");
+    if (!btn) return;
+    const on = notificationsEnabled() && Notification.permission === "granted";
+    btn.textContent = on ? "🔔 Stage notifications on" : "🔕 Stage notifications off";
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  }
+
   // ---------- DOM refs ----------
   const $ = (id) => document.getElementById(id);
 
@@ -468,6 +551,7 @@
     tagsModalBody: $("tags-modal-body"),
     fastTagsRow: $("active-fast-tags"),
     btnOpenTags: $("btn-open-tags"),
+    btnToggleNotify: $("btn-toggle-notify"),
   };
 
   function escapeHtml(s) {
@@ -504,10 +588,12 @@
       const stage = getStageForFast(elapsed, offset);
       if (stage.index !== lastStageIndex) {
         renderStagesList(stage.index);
+        const wasFirstRender = lastStageIndex < 0;
         lastStageIndex = stage.index;
         // gentle motivational nudge on stage advance (skip the very first render)
-        if (lastStageIndex > 0) {
+        if (!wasFirstRender && lastStageIndex > 0) {
           showToast("New stage: " + stage.emoji + " " + stage.name);
+          fireStageNotification(stage);
         }
       }
       updateCurrentStageProgress(elapsed, stage);
@@ -1623,6 +1709,9 @@
 
     if (refs.btnOpenTags)
       refs.btnOpenTags.addEventListener("click", openTagsModal);
+    if (refs.btnToggleNotify)
+      refs.btnToggleNotify.addEventListener("click", toggleStageNotifications);
+    updateNotifyButton();
     if (refs.tagsModal) {
       refs.tagsModal.querySelectorAll("[data-close-tags]").forEach((el) => {
         el.addEventListener("click", closeTagsModal);
