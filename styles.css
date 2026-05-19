@@ -653,8 +653,8 @@ details.stage-row.current .stage-content {
 /* ===== History ===== */
 .history-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
   text-align: center;
 }
 
@@ -665,7 +665,7 @@ details.stage-row.current .stage-content {
 }
 
 .history-stat-value {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
@@ -676,6 +676,45 @@ details.stage-row.current .stage-content {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-dim);
+}
+
+/* ===== Milestones ===== */
+.milestones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.milestone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 10px;
+  background: var(--bg-elev-2);
+  text-align: center;
+  transition: transform 0.15s, background 0.15s;
+}
+.milestone.earned {
+  background: rgba(255, 122, 69, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 122, 69, 0.35);
+}
+.milestone.locked {
+  opacity: 0.35;
+  filter: grayscale(0.6);
+}
+.milestone-emoji {
+  font-size: 22px;
+  line-height: 1;
+}
+.milestone-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.2;
+}
+.milestone.earned .milestone-label {
+  color: var(--text);
 }
 
 .history-list {

@@ -330,6 +330,92 @@
   }
 
 
+  // ---------- Streaks & milestones ----------
+  // A day "counts" toward a streak if a completed fast ended on that local
+  // calendar day. The currently-active fast (if any) also keeps today's spot
+  // warm, so the streak isn't broken just because the user is mid-fast.
+  function getLocalDateKey(d) {
+    const date = d instanceof Date ? d : new Date(d);
+    if (isNaN(date)) return null;
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+
+  function getCountedDaysSet(history, currentFast) {
+    const set = new Set();
+    history.forEach((f) => {
+      const key = getLocalDateKey(f.endTime || f.startTime);
+      if (key) set.add(key);
+    });
+    if (currentFast) set.add(getLocalDateKey(new Date()));
+    return set;
+  }
+
+  function getStreakInfo(history, currentFast) {
+    const days = getCountedDaysSet(history, currentFast);
+    if (days.size === 0) return { current: 0, longest: 0 };
+
+    // Current streak: walk back from today.
+    let current = 0;
+    let cursor = new Date();
+    cursor.setHours(0, 0, 0, 0);
+    while (days.has(getLocalDateKey(cursor))) {
+      current++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    // If today isn't in the set but yesterday is, count from yesterday so the
+    // streak doesn't read "0" all morning before a fast finishes.
+    if (current === 0) {
+      cursor = new Date();
+      cursor.setHours(0, 0, 0, 0);
+      cursor.setDate(cursor.getDate() - 1);
+      while (days.has(getLocalDateKey(cursor))) {
+        current++;
+        cursor.setDate(cursor.getDate() - 1);
+      }
+    }
+
+    // Longest streak ever: scan the sorted day set.
+    const sorted = [...days].sort();
+    let longest = 0;
+    let run = 0;
+    let prev = null;
+    sorted.forEach((key) => {
+      const d = new Date(key + "T00:00:00");
+      if (prev) {
+        const diff = Math.round((d - prev) / 86400000);
+        if (diff === 1) run++;
+        else run = 1;
+      } else {
+        run = 1;
+      }
+      if (run > longest) longest = run;
+      prev = d;
+    });
+    return { current, longest };
+  }
+
+  // Badges the user can earn. Each has `earned(stats)` → boolean.
+  const MILESTONES = [
+    { id: "first",      emoji: "🥇", label: "First fast",     check: (s) => s.total >= 1 },
+    { id: "ten",        emoji: "🔟", label: "10 fasts",       check: (s) => s.total >= 10 },
+    { id: "fifty",      emoji: "🎖️", label: "50 fasts",       check: (s) => s.total >= 50 },
+    { id: "hundred",    emoji: "💯", label: "100 fasts",      check: (s) => s.total >= 100 },
+    { id: "fivehundred",emoji: "🏆", label: "500 fasts",      check: (s) => s.total >= 500 },
+    { id: "hit18",      emoji: "⏰", label: "First 18h fast", check: (s) => s.longestMs >= 18 * 3600000 },
+    { id: "hit20",      emoji: "🧠", label: "First 20h fast", check: (s) => s.longestMs >= 20 * 3600000 },
+    { id: "hit24",      emoji: "🔥", label: "First 24h fast", check: (s) => s.longestMs >= 24 * 3600000 },
+    { id: "hit36",      emoji: "💪", label: "First 36h fast", check: (s) => s.longestMs >= 36 * 3600000 },
+    { id: "hit48",      emoji: "🏔️", label: "First 48h fast", check: (s) => s.longestMs >= 48 * 3600000 },
+    { id: "streak3",    emoji: "🔥", label: "3-day streak",   check: (s) => s.longestStreak >= 3 },
+    { id: "streak7",    emoji: "🔥", label: "7-day streak",   check: (s) => s.longestStreak >= 7 },
+    { id: "streak14",   emoji: "🔥", label: "14-day streak",  check: (s) => s.longestStreak >= 14 },
+    { id: "streak30",   emoji: "🔥", label: "30-day streak",  check: (s) => s.longestStreak >= 30 },
+  ];
+
+
   // ---------- Toast ----------
   let toastTimer = null;
   function showToast(msg) {
@@ -664,6 +750,34 @@
     }
   }
 
+  function renderMilestones(stats) {
+    const card = document.getElementById("milestones-card");
+    if (!card) return;
+    const earned = MILESTONES.filter((m) => m.check(stats));
+    if (earned.length === 0) {
+      card.classList.add("hidden");
+      return;
+    }
+    card.classList.remove("hidden");
+    const grid = card.querySelector(".milestones-grid");
+    if (!grid) return;
+    grid.innerHTML = MILESTONES.map((m) => {
+      const isEarned = m.check(stats);
+      return (
+        '<div class="milestone' + (isEarned ? " earned" : " locked") +
+        '" title="' + escapeHtml(m.label) + '">' +
+        '<span class="milestone-emoji">' + escapeHtml(m.emoji) + "</span>" +
+        '<span class="milestone-label">' + escapeHtml(m.label) + "</span>" +
+        "</div>"
+      );
+    }).join("");
+    const earnedCount = card.querySelector(".milestones-count");
+    if (earnedCount) {
+      earnedCount.textContent =
+        earned.length + " of " + MILESTONES.length + " earned";
+    }
+  }
+
   function renderHistoryView() {
     renderBackupStatus();
     const list = refs.historyList;
@@ -681,6 +795,7 @@
     const totalMs = state.history.reduce((a, f) => a + f.durationMs, 0);
     const avgMs = Math.round(totalMs / total);
     const longest = state.history.reduce((a, f) => Math.max(a, f.durationMs), 0);
+    const streak = getStreakInfo(state.history, state.currentFast);
 
     refs.historyStats.innerHTML =
       '<div class="history-stat"><div class="history-stat-value">' +
@@ -691,7 +806,17 @@
       '</div><div class="history-stat-label">Avg</div></div>' +
       '<div class="history-stat"><div class="history-stat-value">' +
       formatShortDuration(longest) +
-      '</div><div class="history-stat-label">Longest</div></div>';
+      '</div><div class="history-stat-label">Longest</div></div>' +
+      '<div class="history-stat" title="Best ever: ' + streak.longest + ' day' +
+      (streak.longest === 1 ? "" : "s") + '">' +
+      '<div class="history-stat-value">🔥 ' + streak.current +
+      '</div><div class="history-stat-label">Streak</div></div>';
+
+    renderMilestones({
+      total,
+      longestMs: longest,
+      longestStreak: streak.longest,
+    });
 
     // List (newest first)
     [...state.history]
