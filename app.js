@@ -1616,9 +1616,150 @@
     }
   }
 
+  // ---------- Install prompt (Android native + iOS instructions) ----------
+  const INSTALL_DISMISS_KEY = "omad-install-dismissed-at";
+  const INSTALL_DISMISS_DAYS = 14;
+  let deferredInstallPrompt = null;
+
+  function isStandalone() {
+    return (
+      (window.matchMedia &&
+        window.matchMedia("(display-mode: standalone)").matches) ||
+      window.navigator.standalone === true
+    );
+  }
+
+  function isIosSafari() {
+    const ua = window.navigator.userAgent || "";
+    const isIos =
+      /iPad|iPhone|iPod/.test(ua) ||
+      // iPadOS 13+ reports as Mac; disambiguate via touch
+      (ua.includes("Mac") && "ontouchend" in document);
+    if (!isIos) return false;
+    // Exclude in-app browsers (FB, Instagram, etc.) where Add-to-Home-Screen doesn't work
+    const isInAppBrowser = /FBAN|FBAV|Instagram|Line|Twitter|GSA\//.test(ua);
+    if (isInAppBrowser) return false;
+    // Exclude Chrome on iOS (which is WebKit but no A2HS)
+    if (/CriOS|FxiOS|EdgiOS/.test(ua)) return false;
+    return true;
+  }
+
+  function installRecentlyDismissed() {
+    try {
+      const at = parseInt(localStorage.getItem(INSTALL_DISMISS_KEY) || "0", 10);
+      if (!at) return false;
+      const days = (Date.now() - at) / (1000 * 60 * 60 * 24);
+      return days < INSTALL_DISMISS_DAYS;
+    } catch {
+      return false;
+    }
+  }
+
+  function markInstallDismissed() {
+    try {
+      localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now()));
+    } catch {}
+  }
+
+  function showInstallBanner(label) {
+    const banner = document.getElementById("install-banner");
+    if (!banner) return;
+    if (label) {
+      const text = banner.querySelector(".update-banner-text");
+      if (text) text.textContent = label;
+    }
+    banner.classList.remove("hidden");
+    void banner.offsetWidth;
+    banner.classList.add("show");
+  }
+
+  function hideInstallBanner() {
+    const banner = document.getElementById("install-banner");
+    if (!banner) return;
+    banner.classList.remove("show");
+    setTimeout(() => banner.classList.add("hidden"), 300);
+  }
+
+  function openIosInstallModal() {
+    const modal = document.getElementById("ios-install-modal");
+    if (modal) modal.classList.remove("hidden");
+  }
+
+  function closeIosInstallModal() {
+    const modal = document.getElementById("ios-install-modal");
+    if (modal) modal.classList.add("hidden");
+  }
+
+  function wireInstallPrompt() {
+    const dismissBtn = document.getElementById("btn-install-dismiss");
+    const actionBtn = document.getElementById("btn-install-action");
+    if (dismissBtn) {
+      dismissBtn.addEventListener("click", () => {
+        markInstallDismissed();
+        hideInstallBanner();
+      });
+    }
+    if (actionBtn) {
+      actionBtn.addEventListener("click", async () => {
+        if (deferredInstallPrompt) {
+          // Native (Android / Chromium desktop) install flow
+          hideInstallBanner();
+          try {
+            deferredInstallPrompt.prompt();
+            const choice = await deferredInstallPrompt.userChoice;
+            if (choice && choice.outcome !== "accepted") {
+              markInstallDismissed();
+            }
+          } catch (e) {
+            console.warn("install prompt failed", e);
+          }
+          deferredInstallPrompt = null;
+        } else {
+          // iOS — open instructions
+          openIosInstallModal();
+        }
+      });
+    }
+
+    const iosModal = document.getElementById("ios-install-modal");
+    if (iosModal) {
+      iosModal.querySelectorAll("[data-close-ios-install]").forEach((el) => {
+        el.addEventListener("click", () => {
+          closeIosInstallModal();
+          markInstallDismissed();
+          hideInstallBanner();
+        });
+      });
+    }
+
+    // Android / desktop Chromium path
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      if (isStandalone() || installRecentlyDismissed()) return;
+      // Brief delay so it's not the very first thing users see
+      setTimeout(() => showInstallBanner("📲 Install OMAD as an app"), 2500);
+    });
+
+    // Hide if installed during the session
+    window.addEventListener("appinstalled", () => {
+      hideInstallBanner();
+      deferredInstallPrompt = null;
+    });
+
+    // iOS Safari path — no native event, so show our own banner
+    if (isIosSafari() && !isStandalone() && !installRecentlyDismissed()) {
+      setTimeout(
+        () => showInstallBanner("📲 Add OMAD to your Home Screen"),
+        2500
+      );
+    }
+  }
+
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       wireUpdateBanner();
+      wireInstallPrompt();
       navigator.serviceWorker
         .register("service-worker.js")
         .then((reg) => {

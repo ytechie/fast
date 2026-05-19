@@ -171,6 +171,45 @@
         <button id="btn-update-refresh" class="update-btn">Refresh</button>
         <button id="btn-update-dismiss" class="update-dismiss" aria-label="Dismiss">×</button>
       </div>
+
+      <!-- Install prompt (Android = native, iOS = instructions modal) -->
+      <div id="install-banner" class="update-banner hidden" role="status" aria-live="polite">
+        <span class="update-banner-text">📲 Install OMAD as an app</span>
+        <button id="btn-install-action" class="update-btn">Install</button>
+        <button id="btn-install-dismiss" class="update-dismiss" aria-label="Dismiss">×</button>
+      </div>
+
+      <!-- iOS install instructions modal -->
+      <div id="ios-install-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="ios-install-title">
+        <div class="modal-backdrop" data-close-ios-install></div>
+        <div class="modal-panel">
+          <h3 id="ios-install-title">Install OMAD on your Home Screen</h3>
+          <p class="modal-sub">iOS doesn't allow apps to install themselves — but it only takes two taps in Safari:</p>
+          <ol class="ios-install-steps">
+            <li>
+              <span class="ios-step-num">1</span>
+              <span class="ios-step-text">Tap the <strong>Share</strong> button
+                <span class="ios-share-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><polyline points="7 9 12 4 17 9"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+                </span>
+                at the bottom of Safari.
+              </span>
+            </li>
+            <li>
+              <span class="ios-step-num">2</span>
+              <span class="ios-step-text">Scroll down and tap <strong>Add to Home Screen</strong>
+                <span class="ios-share-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                </span>.
+              </span>
+            </li>
+          </ol>
+          <p class="modal-sub" style="margin-top:14px;">That's it — OMAD will launch full-screen like a native app, and works offline.</p>
+          <div class="modal-actions">
+            <button class="btn btn-primary" data-close-ios-install>Got it</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script src="app.js"></script>
